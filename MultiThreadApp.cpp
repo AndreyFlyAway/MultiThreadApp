@@ -20,6 +20,7 @@ uint g_task_coun = 1;
 struct task_t {
     uint task_id ; // назначется вручную через глобальный счетсчик g_task_coun
     pthread_t pt_id; // для использоованя с API pthread
+    int progress;
     // void task_func();
 };
 
@@ -40,17 +41,27 @@ static bool is_number(const string& s)
 
 /* @brief простая функция для потока */
 static void *simple_thread(void *args){
+    int progress = 0;
     task_t *task_info = (task_t*)args;
     /* основная работа */
     for (int i = 0; i < 30 ; i++)
     {
         //cout << "simple_thread " << i << endl;
         usleep(500000);
+        pthread_mutex_lock(&g_task_pull_mutex);
+        if (task_info->progress < 99)
+        {
+            task_info->progress += 5;
+        }
+        else{
+            task_info->progress = 99;
+        }
+        pthread_mutex_unlock(&g_task_pull_mutex);
     }
     /* завершение */
     cout << "Taske id " << task_info->task_id << " ends work" << endl;
     // удаляю элемент из пула задач
-    // TODO: вынести это дело за пределы поточной функции
+    // TODO: вынести это дело за пределы поточной функции... или нет?
     pthread_mutex_lock(&g_task_pull_mutex);
     g_it=g_task_pull.find(task_info->task_id);
     if (g_it != g_task_pull.end())
@@ -59,7 +70,7 @@ static void *simple_thread(void *args){
     }
     else
     {
-        cout << "Some error caused. Cant erase task id " << task_info->task_id << endl;
+        printf("Some error caused. Cant erase task with id %u\n", task_info->task_id);
     }
     pthread_mutex_unlock(&g_task_pull_mutex);
     delete task_info;
@@ -68,20 +79,46 @@ static void *simple_thread(void *args){
 /* @brief вызов информации о задаче
  * @return 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач)
  * */
-int print_task_info(uint task_id)
+int print_task_info(std::vector<std::string> data)
 {
-    task_t task_info;
-    pthread_mutex_lock(&g_task_pull_mutex);
-    g_it=g_task_pull.find(task_id);
-    if (g_it != g_task_pull.end())
+    task_t *task_info;
+    uint task_id;
+    if (data.size() == 1) // вывод инофрмвции по всем задачам
     {
-        task_info = *(g_task_pull[task_id]);
-        cout << "Task id " << task_info.task_id << " in progress." << endl;
+        pthread_mutex_lock(&g_task_pull_mutex);
+        for (g_it=g_task_pull.begin(); g_it!=g_task_pull.end(); ++g_it)
+        {
+            task_info =  g_it->second;
+            printf("Task id %u in progress: %d%\n", task_info->task_id, task_info->progress);
+        }
+        pthread_mutex_unlock(&g_task_pull_mutex);
     }
-    else{
-        cout << "There is no task with task id " << task_id << endl;
+    else if (data.size() == 2) // вывод инофрмвции по конкрентно одной задаче
+    {
+        if (is_number(data[1]))
+        {
+            task_id = stoi(data[1]);
+            pthread_mutex_lock(&g_task_pull_mutex);
+            g_it=g_task_pull.find(task_id);
+            if (g_it != g_task_pull.end())
+            {
+                task_info = (g_task_pull[task_id]);
+                printf("Task id %u in progress: %d%\n", task_info->task_id, task_info->progress);
+            }
+            else{
+                cout << "There is no task with task id " << task_id << endl;
+            }
+            pthread_mutex_unlock(&g_task_pull_mutex);
+        }
+        else{
+            cout << "Wrong command format" << endl;
+            //TODO: print_help() вместо этой секции
+        }
+    }else{
+        cout << "Wrong command format" << endl;
+        //TODO: print_help() вместо этой секции
     }
-    pthread_mutex_unlock(&g_task_pull_mutex);
+
 }
 
 
@@ -109,35 +146,37 @@ int task_mannger(string cmd)
     }
     else if (commands[0] == START_TASK_CMD) // старт задачи
     {
+        // TODO: сделать вывод предупреждения, если запущенных задач стало больше 1000, например
         task_info = new task_t;
         task_info->task_id = g_task_coun;
         task_info->pt_id = t1;
+        // кладу данные в контейнер
         pthread_mutex_lock(&g_task_pull_mutex);
         g_task_pull[g_task_coun] = task_info;
+        // создаю задачу
         pthread_mutex_unlock(&g_task_pull_mutex);
         cout << "task id " << g_task_coun << " started" << endl;
-        // создаю задачу
         pthread_create(&t1, NULL, simple_thread,  (void*)task_info);
         g_task_coun++;
-        // кладу данные в контейнер
 
     }
     else if (commands[0] == INFO_CMD) // вызов информации о задаче
     {
-        if (commands.size() == 2)
-        {
-            if (is_number(commands[1]))
-            {
-                print_task_info(stoi(commands[1]));
-            }
-            else{
-                cout << "Wrong command format" << endl;
-                //TODO: print_help() вместо этой секции
-            }
-        }else{
-            cout << "Wrong command format" << endl;
-            //TODO: print_help() вместо этой секции
-        }
+        print_task_info(commands);
+//        if (commands.size() == 2)
+//        {
+//            if (is_number(commands[1]))
+//            {
+//                print_task_info(stoi(commands[1]));
+//            }
+//            else{
+//                cout << "Wrong command format" << endl;
+//                //TODO: print_help() вместо этой секции
+//            }
+//        }else{
+//            cout << "Wrong command format" << endl;
+//            //TODO: print_help() вместо этой секции
+//        }
     }
     else
     {
@@ -154,10 +193,12 @@ int multi_hread_main()
     string cmd;
     bool exit_f = false;
     pthread_t mange_cmd;
-    while (!exit_f)
+    //TODO: print_help()
+    while (!exit_f) // TODO: ???
     {
         getline(cin, cmd);
         if ((res=task_mannger(cmd)) == 1){
+            exit_f = true;
             break;
         }
     }
