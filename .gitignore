@@ -1,0 +1,8 @@
+syntax: glob
+build/*
+CMakeFiles/*
+cmake-build*/*
+cmake_install*/*
+.idea/*
+CMakeCache.txt
+Makefile
