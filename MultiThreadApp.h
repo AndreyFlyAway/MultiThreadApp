@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <pthread.h>
 
+int print_task_info(uint task_id);
 int task_mannger(std::string cmd);
 int multi_hread_main();
 
