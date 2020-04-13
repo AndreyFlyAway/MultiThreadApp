@@ -33,6 +33,51 @@ map<uint, task_t*> g_task_pull;
 map<uint, task_t*>::iterator g_it; // использую для поиска элемента в g_task_pull, создал тут, чтобы не создавать каждый раз в стеке
 
 /* вспомогательные функции */
+/* из-за частых вызовов мьютекса код стал перегруженным, поэтому отдельные действия вынес в отдельные функции */
+/*
+ * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
+ * @return величина задержки
+ */
+static task_t get_task_struct(task_t *tsk){
+    task_t res;
+    pthread_mutex_lock(&g_task_pull_mutex);
+    res = *tsk;
+    pthread_mutex_unlock(&g_task_pull_mutex);
+    return res;
+}
+/*
+ * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
+ * @return величина задержки
+ */
+static int set_task_status(task_t *tsk){
+    int delay;
+    pthread_mutex_lock(&g_task_pull_mutex);
+    delay = tsk->delay_sec;
+    if (delay != 0)
+        tsk->status = TASK_WAITING;
+    else
+        tsk->status = TASK_WORKS;
+    pthread_mutex_unlock(&g_task_pull_mutex);
+    return delay;
+}
+
+/*
+ * @brief установка процента выполнения
+ * @return количесетво установленных процентов
+ */
+static int add_percentage(task_t *tsk, int percent){
+    int ret;
+    pthread_mutex_lock(&g_task_pull_mutex);
+    tsk->progress += percent;
+    if (tsk->progress > 99)
+    {
+        tsk->progress = 99;
+    }
+    ret = tsk->progress;
+    pthread_mutex_unlock(&g_task_pull_mutex);
+    return ret;
+}
+
 /* @brief проверка являеться ли строка числом
  * @return булевое значение */
 static bool is_number(const string& s)
@@ -40,6 +85,10 @@ static bool is_number(const string& s)
     string::const_iterator it = s.begin();
     while (it != s.end() && isdigit(*it)) ++it;
     return !s.empty() && it == s.end();
+}
+
+static task_t get_struct(const string& s){
+
 }
 
 /* @brief простая функция для потока */
@@ -50,35 +99,20 @@ static void *simple_thread(void *args){
     task_t *task_info = (task_t*)args;
 
     // TODO: слишком много захватов мьютекса
-    pthread_mutex_lock(&g_task_pull_mutex);
-    delay = task_info->delay_sec;
-    task_id = task_info->task_id;
-    if (delay != 0)
-        task_info->status = TASK_WAITING;
-    else
-        task_info->status = TASK_WORKS;
-    pthread_mutex_unlock(&g_task_pull_mutex);
+    delay = set_task_status(task_info);
 
-    if (delay != 0){
-        usleep(delay * 1000000);
-    }
+    // TODO: сделать задержку с использованием таймеров и слотов
+//    if (delay != 0){
+//        usleep(delay * 1000000);
+//    }
     printf("task id %u started\n", task_id);
-
 
     /* основная работа */
     for (int i = 0; i < 30 ; i++)
     {
         //cout << "simple_thread " << i << endl;
         usleep(500000);
-        pthread_mutex_lock(&g_task_pull_mutex);
-        if (task_info->progress < 99)
-        {
-            task_info->progress += 5;
-        }
-        else{
-            task_info->progress = 99;
-        }
-        pthread_mutex_unlock(&g_task_pull_mutex);
+        add_percentage(task_info, 5);
     }
     /* завершение */
     printf("Taske id %u ends work\n", task_info->task_id);
