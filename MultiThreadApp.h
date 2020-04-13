@@ -13,6 +13,9 @@
 #include <vector>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <signal.h>
+#include <stdio.h>
 
 int print_task_info(std::vector<std::string> data);
 int task_mannger(std::string cmd);

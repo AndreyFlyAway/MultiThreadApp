@@ -19,11 +19,12 @@ const int TASK_WAITING = 2;
 uint g_task_coun = 1;
 /* структура, для хранения данных о задаче*/
 struct task_t {
-    pthread_t pt_id; // для использоованя с API pthread
-    uint task_id ; // назначется вручную через глобальный счетсчик g_task_coun
-    uint delay_sec; // задержка запуска задачи
-    int progress; // прогресс задачи
-    int status; // код статуса 1 - запущена, 2 - в ожидании
+    pthread_t pt_id;   // для использоованя с API pthread
+    uint task_id ;     // назначется вручную через глобальный счетсчик g_task_coun
+    uint delay_sec;    // задержка запуска задачи
+    int progress;      // прогресс задачи
+    int status;        // код статуса 1 - запущена, 2 - в ожидании
+
     // void task_func();
 };
 
@@ -35,13 +36,23 @@ map<uint, task_t*>::iterator g_it; // использую для поиска э�
 /* вспомогательные функции */
 /* из-за частых вызовов мьютекса код стал перегруженным, поэтому отдельные действия вынес в отдельные функции */
 /*
- * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
- * @return величина задержки
+ * @brief копирование данных структуры из пула задач по id задачи
+ * @return 0 если задачи есть в пуле задач, 1 если нету
  */
-static task_t get_task_struct(task_t *tsk){
-    task_t res;
+static int get_task_by_id(uint task_id, task_t &trgt){
+    task_t *task_info;
+    int res;
     pthread_mutex_lock(&g_task_pull_mutex);
-    res = *tsk;
+    g_it=g_task_pull.find(task_id);
+    if (g_it != g_task_pull.end())
+    {
+        task_info = (g_task_pull[task_id]);
+        trgt = *task_info;
+        res = 0;
+    }
+    else{
+        res = 1;
+    }
     pthread_mutex_unlock(&g_task_pull_mutex);
     return res;
 }
@@ -87,23 +98,17 @@ static bool is_number(const string& s)
     return !s.empty() && it == s.end();
 }
 
-static task_t get_struct(const string& s){
-
-}
-
 /* @brief простая функция для потока */
 static void *simple_thread(void *args){
-    int progress = 0;
     int delay = 0;
-    int task_id = 0;
     task_t *task_info = (task_t*)args;
+    int task_id = task_info->task_id;
 
     // TODO: слишком много захватов мьютекса
     delay = set_task_status(task_info);
 
-    // TODO: сделать задержку с использованием таймеров и слотов
+    // TODO: сделать задержку с использованием таймеров и семафоров
 //    if (delay != 0){
-//        usleep(delay * 1000000);
 //    }
     printf("task id %u started\n", task_id);
 
@@ -138,18 +143,21 @@ static void *simple_thread(void *args){
  * */
 int print_task_info(std::vector<std::string> data)
 {
-    task_t *task_info;
+    task_t task_info_v;
+    task_t *task_info_p;
     uint task_id;
+    int res;
+
     if (data.size() == 1) // вывод инофрмвции по всем задачам
     {
         pthread_mutex_lock(&g_task_pull_mutex);
         for (g_it=g_task_pull.begin(); g_it!=g_task_pull.end(); ++g_it)
         {
-            task_info =  g_it->second;
-            if (task_info->status == TASK_WORKS)
-                printf("Task id %u in progress: %d%\n", task_info->task_id, task_info->progress);
-            else if(task_info->status == TASK_WAITING)
-                printf("Task id %u is waiting. \n", task_info->task_id);
+            task_info_p =  g_it->second;
+            if (task_info_p->status == TASK_WORKS)
+                printf("Task id %u in progress: %d%\n", task_info_p->task_id, task_info_p->progress);
+            else if(task_info_p->status == TASK_WAITING)
+                printf("Task id %u is waiting. \n", task_info_p->task_id);
         }
         pthread_mutex_unlock(&g_task_pull_mutex);
     }
@@ -158,20 +166,18 @@ int print_task_info(std::vector<std::string> data)
         if (is_number(data[1]))
         {
             task_id = stoi(data[1]);
-            pthread_mutex_lock(&g_task_pull_mutex);
-            g_it=g_task_pull.find(task_id);
-            if (g_it != g_task_pull.end())
+            res = get_task_by_id(task_id, task_info_v);
+
+            if (res == 0)
             {
-                task_info = (g_task_pull[task_id]);
-                if (task_info->status == TASK_WORKS)
-                    printf("Task id %u in progress: %d%\n", task_info->task_id, task_info->progress);
-                else if(task_info->status == TASK_WAITING)
-                    printf("Task id %u is waiting. Time until start: %d second\n", task_info->task_id, task_info->delay_sec);
+                if (task_info_v.status == TASK_WORKS)
+                    printf("Task id %u in progress: %d%\n", task_info_v.task_id, task_info_v.progress);
+                else if(task_info_v.status == TASK_WAITING)
+                    printf("Task id %u is waiting. Time until start: %d second\n", task_info_v.task_id, task_info_v.delay_sec);
             }
             else{
                 cout << "There is no task with task id " << task_id << endl;
             }
-            pthread_mutex_unlock(&g_task_pull_mutex);
         }
         else{
             return -2;
