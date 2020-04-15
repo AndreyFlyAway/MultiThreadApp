@@ -1,1 +1,0 @@
-/usr/bin/c++  -g   CMakeFiles/MultiThreadApp.dir/main.cpp.o CMakeFiles/MultiThreadApp.dir/MultiThreadApp.cpp.o  -o MultiThreadApp -lpthread 

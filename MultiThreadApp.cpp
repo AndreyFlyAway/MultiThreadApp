@@ -12,8 +12,9 @@ const string START_TASK_CMD = "s";
 const string INFO_CMD = "info";
 
 /* other */
-const int TASK_ENDED = 0;
-const int TASK_WORKS = 1;
+/* статусы для задач  */
+const int TASK_ENDED   = 0;
+const int TASK_WORKS   = 1;
 const int TASK_WAITING = 2;
 
 uint g_task_coun = 1;
@@ -42,14 +43,26 @@ int get_task_by_id(uint task_id, task_t &trgt){
     pthread_mutex_unlock(&g_task_pull_mutex);
     return res;
 }
+
+/*
+ * @brief копирование данных конктретного элемента по ссылке
+ * @return возвращает значение структру
+ */
+task_t get_task_by_ref(task_t *trgt){
+    pthread_mutex_lock(&(trgt->obj_mutex));
+    task_t ret = *trgt;
+    pthread_mutex_unlock(&(trgt->obj_mutex));
+    return ret;
+}
+
 /*
  * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
  * @return величина задержки
  */
 void set_task_status(task_t *tsk, int status){
-    pthread_mutex_lock(&g_task_pull_mutex);
+    pthread_mutex_lock(&(tsk->obj_mutex));
     tsk->status = status;
-    pthread_mutex_unlock(&g_task_pull_mutex);
+    pthread_mutex_unlock(&(tsk->obj_mutex));
 }
 
 /*
@@ -57,15 +70,15 @@ void set_task_status(task_t *tsk, int status){
  * @return количесетво установленных процентов
  */
 int add_percentage(task_t *tsk, int percent){
-    int ret;
-    pthread_mutex_lock(&g_task_pull_mutex);
+    tsk->in_proccess = true;
+    pthread_mutex_lock(&tsk->obj_mutex);
     tsk->progress += percent;
     if (tsk->progress > 99)
     {
         tsk->progress = 99;
     }
-    ret = tsk->progress;
-    pthread_mutex_unlock(&g_task_pull_mutex);
+    int ret = tsk->progress;
+    pthread_mutex_unlock(&tsk->obj_mutex);
     return ret;
 }
 
@@ -84,42 +97,38 @@ static void *simple_thread(void *args){
     // TODO: с сылкой на объект происходит работа, хотя в этот момент она находиться в пуле задачь, так же в этот
     //       момент ее уже могут удалить, это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
     //       занятоти объекта.
-    task_t *task_info = (task_t*)args;
-    int task_id = task_info->task_id;
-    int delay = task_info->delay_sec;
+    task_t *task_info_p = (task_t*)args;
+    task_t task_info_v = get_task_by_ref((task_t*)args);
+    task_info_p->in_proccess = false;
+    uint delay = task_info_v.delay_sec;
 
     if (delay != 0){
-        time(&(task_info->time_started)); // чтобы вычислять сколько осталось до старта задачи
-        set_task_status(task_info, TASK_WAITING);
+        pthread_mutex_lock(&task_info_p->obj_mutex);
+        time(&(task_info_p->time_started)); // чтобы вычислять сколько осталось до старта задачи
+        pthread_mutex_unlock(&task_info_p->obj_mutex);
+        set_task_status(task_info_p, TASK_WAITING);
         usleep(delay * 1000000);
     }
-    set_task_status(task_info, TASK_WORKS);
-    printf("task id %u started\n", task_id);
+    set_task_status(task_info_p, TASK_WORKS);
+    printf("task id %u started\n", task_info_v.task_id);
 
     /* основная работа */
     for (int i = 0; i < 30 ; i++)
     {
         //cout << "simple_thread " << i << endl;
         usleep(500000);
-        add_percentage(task_info, 5);
+        add_percentage(task_info_p, 5);
     }
     /* завершение */
-    printf("Taske id %u ends work\n", task_info->task_id);
+    printf("Taske id %u ends work\n", task_info_v.task_id);
     // удаляю элемент из пула задач
     // TODO: неоптимальная работа со ссылкми
     pthread_mutex_lock(&g_task_pull_mutex);
-    map<uint, task_t*>::iterator it=g_task_pull.find(task_info->task_id);
-    if (it != g_task_pull.end())
-    {
-        g_task_pull.erase (it);
-    }
-    else
-    {
-        printf("Some error caused. Cant erase task with id %u\n", task_info->task_id);
-    }
-    delete task_info;
+    g_task_pull.erase (task_info_v.task_id);
     pthread_mutex_unlock(&g_task_pull_mutex);
-    delete task_info;
+//    task_info_p->in_proccess = false;
+    // TODO: как корректно удалять объект, ведь его могут в этот момент тоже использовать?
+    delete task_info_p;
 }
 
 /* @brief вывод информации о задаче */
@@ -165,7 +174,6 @@ int get_task_info(std::vector<std::string> data)
         {
             task_id = stoi(data[1]);
             res = get_task_by_id(task_id, task_info_v);
-
             if (res == 0)
             {
                 print_task_info(&task_info_v);
@@ -205,17 +213,17 @@ int start_task(std::vector<std::string> data){
         else
             return -2;
     }
-
-    pthread_mutex_lock(&g_task_pull_mutex);
     task_info->delay_sec = delay;
     task_info->task_id = g_task_coun;
     task_info->pt_id = t1;
+
     // кладу данные в контейнер
+    pthread_mutex_lock(&g_task_pull_mutex);
     g_task_pull[g_task_coun] = task_info;
+    pthread_mutex_unlock(&g_task_pull_mutex);
     // создаю задачу
     pthread_create(&t1, NULL, simple_thread,  (void*)task_info);
     g_task_coun++;
-    pthread_mutex_unlock(&g_task_pull_mutex);
 
 }
 
