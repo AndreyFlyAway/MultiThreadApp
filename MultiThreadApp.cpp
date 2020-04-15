@@ -21,23 +21,19 @@ uint g_task_coun = 1;
 pthread_mutex_t g_task_pull_mutex;
 map<uint, task_t*> g_task_pull;
 // TODO: заменить на hash-таблиу?
-map<uint, task_t*>::iterator g_it; // использую для поиска элемента в g_task_pull, создал тут, чтобы не создавать каждый раз в стеке
-
 /* вспомогательные функции */
 /* из-за частых вызовов мьютекса код стал перегруженным, поэтому отдельные действия вынес в отдельные функции */
 /*
  * @brief копирование данных структуры из пула задач по id задачи
  * @return 0 если задачи есть в пуле задач, 1 если нету
  */
-static int get_task_by_id(uint task_id, task_t &trgt){
-    task_t *task_info;
-    int res;
+int get_task_by_id(uint task_id, task_t &trgt){
+    int res = 0;
     pthread_mutex_lock(&g_task_pull_mutex);
-    g_it=g_task_pull.find(task_id);
-    if (g_it != g_task_pull.end())
+    map<uint, task_t*>::iterator  it=g_task_pull.find(task_id);
+    if (it != g_task_pull.end())
     {
-        task_info = (g_task_pull[task_id]);
-        trgt = *task_info;
+        trgt = *(g_task_pull[task_id]);
         res = 0;
     }
     else{
@@ -50,7 +46,7 @@ static int get_task_by_id(uint task_id, task_t &trgt){
  * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
  * @return величина задержки
  */
-static void set_task_status(task_t *tsk, int status){
+void set_task_status(task_t *tsk, int status){
     pthread_mutex_lock(&g_task_pull_mutex);
     tsk->status = status;
     pthread_mutex_unlock(&g_task_pull_mutex);
@@ -60,7 +56,7 @@ static void set_task_status(task_t *tsk, int status){
  * @brief установка процента выполнения
  * @return количесетво установленных процентов
  */
-static int add_percentage(task_t *tsk, int percent){
+int add_percentage(task_t *tsk, int percent){
     int ret;
     pthread_mutex_lock(&g_task_pull_mutex);
     tsk->progress += percent;
@@ -75,7 +71,7 @@ static int add_percentage(task_t *tsk, int percent){
 
 /* @brief проверка являеться ли строка числом
  * @return булевое значение */
-static bool is_number(const string& s)
+bool is_number(const string& s)
 {
     string::const_iterator it = s.begin();
     while (it != s.end() && isdigit(*it)) ++it;
@@ -85,6 +81,9 @@ static bool is_number(const string& s)
 /* @brief простая функция для потока */
 static void *simple_thread(void *args){
     // TODO: слишком много захватов мьютекса
+    // TODO: с сылкой на объект происходит работа, хотя в этот момент она находиться в пуле задачь, так же в этот
+    //       момент ее уже могут удалить, это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
+    //       занятоти объекта.
     task_t *task_info = (task_t*)args;
     int task_id = task_info->task_id;
     int delay = task_info->delay_sec;
@@ -107,23 +106,24 @@ static void *simple_thread(void *args){
     /* завершение */
     printf("Taske id %u ends work\n", task_info->task_id);
     // удаляю элемент из пула задач
-    // TODO: вынести это дело за пределы поточной функции... или нет?
+    // TODO: неоптимальная работа со ссылкми
     pthread_mutex_lock(&g_task_pull_mutex);
-    g_it=g_task_pull.find(task_info->task_id);
-    if (g_it != g_task_pull.end())
+    map<uint, task_t*>::iterator it=g_task_pull.find(task_info->task_id);
+    if (it != g_task_pull.end())
     {
-        g_task_pull.erase (g_it);
+        g_task_pull.erase (it);
     }
     else
     {
         printf("Some error caused. Cant erase task with id %u\n", task_info->task_id);
     }
+    delete task_info;
     pthread_mutex_unlock(&g_task_pull_mutex);
     delete task_info;
 }
 
 /* @brief вывод информации о задаче */
-void get_task_info(task_t *tsk){
+void print_task_info(task_t *tsk){
     if (tsk->status == TASK_WORKS)
     {
         printf("Task id %u in progress: %d%\n", tsk->task_id, tsk->progress);
@@ -150,11 +150,12 @@ int get_task_info(std::vector<std::string> data)
 
     if (data.size() == 1) // вывод инофрмвции по всем задачам
     {
+        // FIXME: слишком на долго запираеться мьютекс
         pthread_mutex_lock(&g_task_pull_mutex);
-        for (g_it=g_task_pull.begin(); g_it!=g_task_pull.end(); ++g_it)
+        for (map<uint, task_t*>::iterator it=g_task_pull.begin(); it!=g_task_pull.end(); ++it)
         {
-            task_info_p =  g_it->second;
-            get_task_info(task_info_p);
+            task_info_p =  it->second;
+            print_task_info(task_info_p);
         }
         pthread_mutex_unlock(&g_task_pull_mutex);
     }
@@ -167,7 +168,7 @@ int get_task_info(std::vector<std::string> data)
 
             if (res == 0)
             {
-                get_task_info(&task_info_v);
+                print_task_info(&task_info_v);
             }
             else{
                 cout << "There is no task with task id " << task_id << endl;
