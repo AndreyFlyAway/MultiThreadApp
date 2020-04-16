@@ -13,11 +13,15 @@ const string INFO_CMD = "info";
 
 /* other */
 /* статусы для задач  */
-const int TASK_ENDED   = 0;
+const int TASK_ENDING   = 0;  // предполагаеться что этот статус будет использоваться, если будет паралельно вместе с завершением задачи будет запущен процесс остановки задачи
 const int TASK_WORKS   = 1;
 const int TASK_WAITING = 2;
 
 uint g_task_coun = 1;
+
+/* см. функцию print_help */
+const int WRONG_FMT = 1;//
+const int UNREC_CMD = 2;//
 
 pthread_mutex_t g_task_pull_mutex;
 map<uint, task_t*> g_task_pull;
@@ -62,6 +66,7 @@ task_t get_task_by_ref(task_t *trgt){
 void set_task_status(task_t *tsk, int status){
     pthread_mutex_lock(&(tsk->obj_mutex));
     tsk->status = status;
+    tsk->in_proccess = false;
     pthread_mutex_unlock(&(tsk->obj_mutex));
 }
 
@@ -95,11 +100,13 @@ bool is_number(const string& s)
 static void *simple_thread(void *args){
     // TODO: слишком много захватов мьютекса
     // TODO: с сылкой на объект происходит работа, хотя в этот момент она находиться в пуле задачь, так же в этот
-    //       момент ее уже могут удалить, это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
+    //       момент ее уже могут удалить - это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
     //       занятоти объекта.
     task_t *task_info_p = (task_t*)args;
-    task_t task_info_v = get_task_by_ref((task_t*)args);
+    pthread_mutex_lock(&task_info_p->obj_mutex);
     task_info_p->in_proccess = false;
+    pthread_mutex_unlock(&task_info_p->obj_mutex);
+    task_t task_info_v = get_task_by_ref((task_t*)args);
     uint delay = task_info_v.delay_sec;
 
     if (delay != 0){
@@ -120,29 +127,31 @@ static void *simple_thread(void *args){
         add_percentage(task_info_p, 5);
     }
     /* завершение */
-    printf("Taske id %u ends work\n", task_info_v.task_id);
+    set_task_status(task_info_p, TASK_ENDING);
     // удаляю элемент из пула задач
-    // TODO: неоптимальная работа со ссылкми
     pthread_mutex_lock(&g_task_pull_mutex);
     g_task_pull.erase (task_info_v.task_id);
     pthread_mutex_unlock(&g_task_pull_mutex);
-//    task_info_p->in_proccess = false;
+    printf("Taske id %u ends work\n", task_info_v.task_id);
     // TODO: как корректно удалять объект, ведь его могут в этот момент тоже использовать?
     delete task_info_p;
 }
 
-/* @brief вывод информации о задаче */
+/* @brief вывод информации о задаче, не предполагается, что эта функция должна работать напрямую с объектами,
+ * к которым может быть одновременный доступ, поэтому мьютексы не используются */
 void print_task_info(task_t *tsk){
-    if (tsk->status == TASK_WORKS)
+    int stat = tsk->status;
+    switch (stat)
     {
-        printf("Task id %u in progress: %d%\n", tsk->task_id, tsk->progress);
-    }
-    else if(tsk->status == TASK_WAITING)
-    {
-        time_t now;
-        time(&now) ;
-        int rest_time = tsk->delay_sec - (int)difftime(now, tsk->time_started);
-        printf("Task id %u is waiting. Time until start: %d seconds\n", tsk->task_id, rest_time);
+        case TASK_WORKS:
+            printf("Task id %u in progress: %d%\n", tsk->task_id, tsk->progress);
+            break;
+        case TASK_WAITING:
+            time_t now;
+            time(&now) ;
+            int rest_time = tsk->delay_sec - (int)difftime(now, tsk->time_started);
+            printf("Task id %u is waiting. Time until start: %d seconds\n", tsk->task_id, rest_time);
+            break;
     }
 }
 
@@ -154,12 +163,10 @@ int get_task_info(std::vector<std::string> data)
 {
     task_t task_info_v;
     task_t *task_info_p;
-    uint task_id;
-    int res;
 
     if (data.size() == 1) // вывод инофрмвции по всем задачам
     {
-        // FIXME: слишком на долго запираеться мьютекс
+        // FIXME: слишком на долго запираеться пул задач
         pthread_mutex_lock(&g_task_pull_mutex);
         for (map<uint, task_t*>::iterator it=g_task_pull.begin(); it!=g_task_pull.end(); ++it)
         {
@@ -172,14 +179,14 @@ int get_task_info(std::vector<std::string> data)
     {
         if (is_number(data[1]))
         {
-            task_id = stoi(data[1]);
-            res = get_task_by_id(task_id, task_info_v);
+            uint task_id = uint(stoi(data[1]));
+            int res = get_task_by_id(task_id, task_info_v);
             if (res == 0)
             {
                 print_task_info(&task_info_v);
             }
             else{
-                cout << "There is no task with task id " << task_id << endl;
+                printf("There is no task with task id %u\n", task_id);
             }
         }
         else{
@@ -188,7 +195,35 @@ int get_task_info(std::vector<std::string> data)
     }else{
         return -2;
     }
+    return 0;
 
+}
+
+/* @brief вывод справки об использовании
+ * @param wrong_fmt: используеться, если нужно вывести Wrong command format!"*/
+void print_help(int wrong_fmt){
+    switch (wrong_fmt){
+        case WRONG_FMT:
+            printf("Wrong command format!\n");
+            break;
+        case UNREC_CMD:
+            printf("Unrecognized command.\n");
+            break;
+    }
+    printf("Start task command format without delay:\n"
+           "  %s now\n"
+           "Start task command format with delay\n"
+           "  %s [time]\n"
+           "Information about all tasks:\n"
+           "  %s\n"
+           "Information about all one task by ID:"
+           "  %s [task ID]\n"
+           "Enter '%s' to quit\n",
+           START_TASK_CMD.c_str(),
+           START_TASK_CMD.c_str(),
+           INFO_CMD.c_str(),
+           INFO_CMD.c_str(),
+           EXIT_CMD.c_str());
 }
 
 /* @brief запуск задачи
@@ -197,8 +232,7 @@ int get_task_info(std::vector<std::string> data)
 int start_task(std::vector<std::string> data){
     // TODO: сделать вывод предупреждения, если запущенных задач стало больше 1000, например
     pthread_t t1;
-    int arg_len = data.size();
-    int delay;
+    int delay = 0;
     task_t *task_info = new task_t;
 
     if (data.size() != 2)
@@ -216,6 +250,7 @@ int start_task(std::vector<std::string> data){
     task_info->delay_sec = delay;
     task_info->task_id = g_task_coun;
     task_info->pt_id = t1;
+    task_info->in_proccess = true;
 
     // кладу данные в контейнер
     pthread_mutex_lock(&g_task_pull_mutex);
@@ -232,20 +267,19 @@ int start_task(std::vector<std::string> data){
  * */
 int task_mannger(string cmd)
 {
-    /* разделяю по словам */
-    int res;
+    /* разделяю строку по словам */
+    int res = 0;
     stringstream ss(cmd);
     istream_iterator<std::string> begin_s(ss);
     istream_iterator<std::string> end_s;
     vector<string> commands(begin_s, end_s);
 
     if (commands.size() < 1){
-        //TODO: print_help()
+        print_help(WRONG_FMT);
         return -1;
     }
     if (commands[0] == EXIT_CMD){
-        cout << "End work bye!" << endl;
-        // TODO: тут должен быть вызов остановки всех потоков
+        printf("End work bye!\n");
         return 1;
     }
     else if (commands[0] == START_TASK_CMD) // старт задачи
@@ -253,22 +287,19 @@ int task_mannger(string cmd)
         // TODO: сделать вывод предупреждения, если запущенных задач стало больше 1000, например
         res = start_task(commands) ;
         if (res == -2){
-            printf("Worong command format!\n");
-            //TODO: print_help()
+            print_help(WRONG_FMT);
         }
     }
     else if (commands[0] == INFO_CMD) // вызов информации о задаче
     {
         res = get_task_info(commands);
         if (res == -2){
-            printf("Worong command format!\n");
-            //TODO: print_help()
+            print_help(WRONG_FMT);
         }
     }
     else
     {
-        cout << "Unregonized command " << cmd << endl;
-        //TODO: print_help()
+        print_help(UNREC_CMD);
     }
     return 0;
 }
@@ -280,7 +311,7 @@ int multi_hread_main()
     string cmd;
     bool exit_f = false;
     pthread_t mange_cmd;
-    //TODO: print_help()
+    print_help();
     while (!exit_f) // TODO: ???
     {
         getline(cin, cmd);
