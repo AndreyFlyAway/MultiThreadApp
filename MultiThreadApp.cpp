@@ -26,6 +26,11 @@ uint g_task_coun = 1;
 const int WRONG_FMT = 1;//
 const int UNREC_CMD = 2;//
 
+
+/* для функции set_pause_state */
+const bool PAUSE_STATE = false;
+const bool CONTINUE_STATE = true;
+
 pthread_mutex_t g_task_pull_mutex;
 map<uint, task_t*> g_task_pull;
 // TODO: заменить на hash-таблиу?
@@ -126,23 +131,24 @@ void *simple_thread(void *args){
     for (int i = 0; i < 30 ; i++)
     {
         // обспечение паузы
-        pthread_mutex_lock(&task_info_p->obj_mutex);
+        pthread_mutex_lock(&task_info_p->pause_flag_mutex);
         while(!(task_info_p->pause_flag)){
-            pthread_cond_wait(&task_info_p->thread_cond, &task_info_p->obj_mutex);
+            pthread_cond_wait(&task_info_p->thread_cond, &task_info_p->pause_flag_mutex);
         }
-        pthread_mutex_unlock(&task_info_p->obj_mutex);
+        pthread_mutex_unlock(&task_info_p->pause_flag_mutex);
         /* работа в цикле */
         //cout << "simple_thread " << i << endl;
         usleep(500000);
         add_percentage(task_info_p, 5);
     }
     /* завершение */
+    printf("KEKEKE\n");
     set_task_status(task_info_p, TASK_ENDING);
     // удаляю элемент из пула задач
     pthread_mutex_lock(&g_task_pull_mutex);
     g_task_pull.erase (task_info_v.task_id);
     pthread_mutex_unlock(&g_task_pull_mutex);
-    printf("Taske id %u ends work\n", task_info_v.task_id);
+    printf("Task id %u ends work\n", task_info_v.task_id);
     // TODO: как корректно удалять объект, ведь его могут в этот момент тоже использовать?
     delete task_info_p;
 }
@@ -252,38 +258,38 @@ int set_pause_state(uint task_id, bool state){
     int res = 0;
     task_t *task_info_p;
     pthread_mutex_lock(&g_task_pull_mutex);
-    map<uint, task_t*>::iterator  it=g_task_pull.find(task_id);
+    map<uint, task_t*>::iterator it = g_task_pull.find(task_id);
     if (it != g_task_pull.end())
     {
         task_info_p = g_task_pull[task_id];
     }
     else{
-        return  1;
+        pthread_mutex_unlock(&g_task_pull_mutex);
+        return 1;
     }
     pthread_mutex_unlock(&g_task_pull_mutex);
 
     // TODO: использовать trylock??
     pthread_mutex_lock(&task_info_p->obj_mutex);
-    state = task_info_p->status;
-    if (state == false)
-        task_info_p->status = TASK_WORKS;
-    if (state == true)
-        task_info_p->status = TASK_PAUSE;
-    int stat = task_info_p->status;
-    if ((stat == TASK_WORKS) || (stat == TASK_WAITING))
+    int status = task_info_p->status;
+    if ((status == TASK_WORKS) || (status == TASK_WAITING))
     {
-
         task_info_p->pause_flag = state;
         pthread_cond_signal(&task_info_p->thread_cond);
     }
-    else if (stat == TASK_PAUSE)
+    else if ( ((status == TASK_PAUSE) && (state == PAUSE_STATE)) ||
+              ((status == TASK_WAITING) && (state == CONTINUE_STATE))  )
     {
         res = 2;
     }
-    else if (stat == TASK_ENDING){
+    else if (status == TASK_ENDING)
+    {
         res = 3;
     }
-
+    if (state == PAUSE_STATE)
+        task_info_p->status = TASK_PAUSE;
+    if (state == CONTINUE_STATE)
+        task_info_p->status = TASK_WORKS;
     pthread_mutex_unlock(&task_info_p->obj_mutex);
     return res;
 }
@@ -362,12 +368,12 @@ int task_mannger(string cmd)
     else if (commands[0] == PAUSE_TASK) // поставить задачу на паузу
     {
         uint task_id = uint(stoi(commands[1]));
-        set_pause_state(task_id, true);
+        set_pause_state(task_id, PAUSE_STATE);
     }
     else if (commands[0] == CONTINUE_TASK) // поставить задачу на паузу
     {
         uint task_id = uint(stoi(commands[1]));
-        set_pause_state(task_id, false);
+        set_pause_state(task_id, CONTINUE_STATE);
     }
     else
     {
