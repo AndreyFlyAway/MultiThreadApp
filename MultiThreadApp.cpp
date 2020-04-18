@@ -10,12 +10,15 @@ using namespace std;
 const string EXIT_CMD = "q";
 const string START_TASK_CMD = "s";
 const string INFO_CMD = "info";
+const string PAUSE_TASK = "p";
+const string CONTINUE_TASK = "c";
 
 /* other */
 /* статусы для задач  */
 const int TASK_ENDING   = 0;  // предполагаеться что этот статус будет использоваться, если будет паралельно вместе с завершением задачи будет запущен процесс остановки задачи
 const int TASK_WORKS   = 1;
 const int TASK_WAITING = 2;
+const int TASK_PAUSE = 3;
 
 uint g_task_coun = 1;
 
@@ -97,7 +100,7 @@ bool is_number(const string& s)
 }
 
 /* @brief простая функция для потока */
-static void *simple_thread(void *args){
+void *simple_thread(void *args){
     // TODO: слишком много захватов мьютекса
     // TODO: с сылкой на объект происходит работа, хотя в этот момент она находиться в пуле задачь, так же в этот
     //       момент ее уже могут удалить - это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
@@ -122,6 +125,13 @@ static void *simple_thread(void *args){
     /* основная работа */
     for (int i = 0; i < 30 ; i++)
     {
+        // обспечение паузы
+        pthread_mutex_lock(&task_info_p->obj_mutex);
+        while(!(task_info_p->pause_flag)){
+            pthread_cond_wait(&task_info_p->thread_cond, &task_info_p->obj_mutex);
+        }
+        pthread_mutex_unlock(&task_info_p->obj_mutex);
+        /* работа в цикле */
         //cout << "simple_thread " << i << endl;
         usleep(500000);
         add_percentage(task_info_p, 5);
@@ -141,16 +151,20 @@ static void *simple_thread(void *args){
  * к которым может быть одновременный доступ, поэтому мьютексы не используются */
 void print_task_info(task_t *tsk){
     int stat = tsk->status;
+    int rest_time;
+    time_t now;
     switch (stat)
     {
         case TASK_WORKS:
             printf("Task id %u in progress: %d%\n", tsk->task_id, tsk->progress);
             break;
         case TASK_WAITING:
-            time_t now;
             time(&now) ;
-            int rest_time = tsk->delay_sec - (int)difftime(now, tsk->time_started);
+            rest_time = tsk->delay_sec - (int)difftime(now, tsk->time_started);
             printf("Task id %u is waiting. Time until start: %d seconds\n", tsk->task_id, rest_time);
+            break;
+        case TASK_PAUSE:
+            printf("Task id %u in pause. Current progress %d%\n", tsk->task_id, tsk->progress);
             break;
     }
 }
@@ -226,6 +240,54 @@ void print_help(int wrong_fmt){
            EXIT_CMD.c_str());
 }
 
+/* @brief используеться для приостановки (на паузу) или запуска задачи
+ * @return код результата:
+ * 0 - все ок
+ * 1 - нет задачи с данным id
+ * 2 - статус задачи совпадает с тем, что уже имеется, т.е. например если задача ставиться на паузу, а она уже
+ *     на паузе
+ * 3 - задача в процессе завершения
+ * */
+int set_pause_state(uint task_id, bool state){
+    int res = 0;
+    task_t *task_info_p;
+    pthread_mutex_lock(&g_task_pull_mutex);
+    map<uint, task_t*>::iterator  it=g_task_pull.find(task_id);
+    if (it != g_task_pull.end())
+    {
+        task_info_p = g_task_pull[task_id];
+    }
+    else{
+        return  1;
+    }
+    pthread_mutex_unlock(&g_task_pull_mutex);
+
+    // TODO: использовать trylock??
+    pthread_mutex_lock(&task_info_p->obj_mutex);
+    state = task_info_p->status;
+    if (state == false)
+        task_info_p->status = TASK_WORKS;
+    if (state == true)
+        task_info_p->status = TASK_PAUSE;
+    int stat = task_info_p->status;
+    if ((stat == TASK_WORKS) || (stat == TASK_WAITING))
+    {
+
+        task_info_p->pause_flag = state;
+        pthread_cond_signal(&task_info_p->thread_cond);
+    }
+    else if (stat == TASK_PAUSE)
+    {
+        res = 2;
+    }
+    else if (stat == TASK_ENDING){
+        res = 3;
+    }
+
+    pthread_mutex_unlock(&task_info_p->obj_mutex);
+    return res;
+}
+
 /* @brief запуск задачи
  * @return 0 если все ок, -1 если не удалось запустить задачу, -2 если неверный формат команды
  * */
@@ -296,6 +358,16 @@ int task_mannger(string cmd)
         if (res == -2){
             print_help(WRONG_FMT);
         }
+    }
+    else if (commands[0] == PAUSE_TASK) // поставить задачу на паузу
+    {
+        uint task_id = uint(stoi(commands[1]));
+        set_pause_state(task_id, true);
+    }
+    else if (commands[0] == CONTINUE_TASK) // поставить задачу на паузу
+    {
+        uint task_id = uint(stoi(commands[1]));
+        set_pause_state(task_id, false);
     }
     else
     {

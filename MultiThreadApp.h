@@ -21,14 +21,17 @@
 // TODO: разобраться с конструктором по умолчанию
 // TODO: возможно есть смысл перенести in_proccess в состав атрибута status
 struct task_t {
-    pthread_mutex_t obj_mutex; // используться для доступа к текущему объекту
-    pthread_t pt_id;           // для использоованя с API pthread
-    time_t time_started;       // время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
-    uint task_id;              // назначется вручную через глобальный счетсчик g_task_coun
-    int delay_sec;             // задержка запуска задачи
-    int progress ;             // прогресс задачи
-    int status;                // код статуса: 0 - в процессе завершения, 1 - запущена, 2 - в ожидании
-    bool in_proccess;          // статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпдяолм задачи
+    pthread_mutex_t obj_mutex;         // используться для доступа к текущему объекту
+    pthread_mutex_t pause_flag_mutex;  // используться для работы с флагом паузы
+    pthread_cond_t thread_cond;     // атрбут состояния
+    pthread_t pt_id;                    // для использоованя с API pthread
+    time_t time_started;               // время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
+    uint task_id;                      // назначется вручную через глобальный счетсчик g_task_coun
+    int delay_sec;                     // задержка запуска задачи
+    int progress ;                     // прогресс задачи
+    int status;                        // код статуса: 0 - в процессе завершения, 1 - запущена, 2 - в ожидании
+    bool in_proccess;                  // статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпдяолм задачи
+    int pause_flag;                   // флаг паузы потока
     task_t()
             : pt_id(0)
             , task_id(0)
@@ -37,7 +40,12 @@ struct task_t {
             , progress(0)
             , status(0)
             , in_proccess(false)
-    {}
+            , pause_flag(false)
+    {
+        pthread_cond_init(&thread_cond, NULL);
+        pthread_mutex_init(&obj_mutex, NULL);
+        pthread_mutex_init(&pause_flag_mutex, NULL);
+    }
 };
 
 /* common functions */
@@ -49,10 +57,10 @@ bool is_number(const std::string& s);
 void print_task_info(task_t *tsk);
 int get_task_info(std::vector<std::string> data);
 void print_help(int wrong_fmt=0);
-/*  */
-int get_task_info(std::vector<std::string> data);
-void get_task_info(task_t *tsk);
+/* main work */
+void *simple_thread(void *args);
 int task_mannger(std::string cmd);
+int set_pause_state(uint task_id, bool state);
 int multi_hread_main();
 
 #endif //MULTITHREADAPP_MULTITHREADAPP_H
