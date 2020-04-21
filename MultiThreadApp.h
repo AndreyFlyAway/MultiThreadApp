@@ -23,15 +23,15 @@
 struct task_t {
     pthread_mutex_t obj_mutex;         // используться для доступа к текущему объекту
     pthread_mutex_t pause_flag_mutex;  // используться для работы с флагом паузы
-    pthread_cond_t thread_cond;     // атрбут состояния
-    pthread_t pt_id;                    // для использоованя с API pthread
+    pthread_cond_t thread_cond;        // атрбут состояния (в стд рассылке состояний не гарантирует доставки)
+    pthread_t pt_id;                   // для использоованя с API pthread
     time_t time_started;               // время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
     uint task_id;                      // назначется вручную через глобальный счетсчик g_task_coun
     int delay_sec;                     // задержка запуска задачи
     int progress ;                     // прогресс задачи
     int status;                        // код статуса: 0 - в процессе завершения, 1 - запущена, 2 - в ожидании
     bool in_proccess;                  // статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпдяолм задачи
-    int pause_flag;                   // флаг паузы потока
+    int pause_flag;                    // флаг паузы потока, atomic флаг.
     task_t()
             : pt_id(0)
             , task_id(0)
@@ -40,7 +40,7 @@ struct task_t {
             , progress(0)
             , status(0)
             , in_proccess(false)
-            , pause_flag(false)
+            , pause_flag(true)
     {
         pthread_cond_init(&thread_cond, NULL);
         pthread_mutex_init(&obj_mutex, NULL);
@@ -48,6 +48,7 @@ struct task_t {
     }
 };
 
+// TODO: прописать интрефейсы и комментарии
 /* common functions */
 int get_task_by_id(uint task_id, task_t &trgt);
 task_t get_task_by_ref(task_t &trgt);

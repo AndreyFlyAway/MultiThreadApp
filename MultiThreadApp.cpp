@@ -6,33 +6,36 @@
 
 using namespace std;
 
+// TODO: сделать
 /* command constants*/
-const string EXIT_CMD = "q";
-const string START_TASK_CMD = "s";
-const string INFO_CMD = "info";
-const string PAUSE_TASK = "p";
-const string CONTINUE_TASK = "c";
+static const string EXIT_CMD = "q";
+static const string START_TASK_CMD = "s";
+static const string INFO_CMD = "info";
+static const string PAUSE_TASK = "p";
+static const string CONTINUE_TASK = "c";
 
 /* other */
 /* статусы для задач  */
-const int TASK_ENDING   = 0;  // предполагаеться что этот статус будет использоваться, если будет паралельно вместе с завершением задачи будет запущен процесс остановки задачи
-const int TASK_WORKS   = 1;
-const int TASK_WAITING = 2;
-const int TASK_PAUSE = 3;
+static const int TASK_ENDING = 0;  // предполагаеться что этот статус будет использоваться, если будет паралельно вместе с завершением задачи будет запущен процесс остановки задачи
+static const int TASK_WORKS = 1;
+static const int TASK_WAITING = 2;
+static const int TASK_PAUSE = 3;
 
-uint g_task_coun = 1;
+static uint g_task_coun = 1; // TODO: сделать static внутри функции start_task
 
 /* см. функцию print_help */
-const int WRONG_FMT = 1;//
-const int UNREC_CMD = 2;//
+static const int WRONG_FMT = 1;//
+static const int UNREC_CMD = 2;//
 
 
 /* для функции set_pause_state */
 const bool PAUSE_STATE = false;
 const bool CONTINUE_STATE = true;
 
-pthread_mutex_t g_task_pull_mutex;
-map<uint, task_t*> g_task_pull;
+// TODO: p
+static pthread_mutex_t g_task_pull_mutex;
+static map<uint, task_t*> g_task_pull;
+
 // TODO: заменить на hash-таблиу?
 /* вспомогательные функции */
 /* из-за частых вызовов мьютекса код стал перегруженным, поэтому отдельные действия вынес в отдельные функции */
@@ -142,9 +145,10 @@ void *simple_thread(void *args){
         add_percentage(task_info_p, 5);
     }
     /* завершение */
-    printf("KEKEKE\n");
+    // как должно быть:
     set_task_status(task_info_p, TASK_ENDING);
     // удаляю элемент из пула задач
+    // TODO: проверять не работают ли с эти контейнером, а потом удалять объект (или после)
     pthread_mutex_lock(&g_task_pull_mutex);
     g_task_pull.erase (task_info_v.task_id);
     pthread_mutex_unlock(&g_task_pull_mutex);
@@ -165,7 +169,7 @@ void print_task_info(task_t *tsk){
             printf("Task id %u in progress: %d%\n", tsk->task_id, tsk->progress);
             break;
         case TASK_WAITING:
-            time(&now) ;
+            time(&now);
             rest_time = tsk->delay_sec - (int)difftime(now, tsk->time_started);
             printf("Task id %u is waiting. Time until start: %d seconds\n", tsk->task_id, rest_time);
             break;
@@ -179,8 +183,10 @@ void print_task_info(task_t *tsk){
  * @return 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
  * s-2 если неверный формат команды
  * */
+// TODO: продумать интерфейс
 int get_task_info(std::vector<std::string> data)
 {
+    // проинициализировать
     task_t task_info_v;
     task_t *task_info_p;
 
@@ -210,7 +216,7 @@ int get_task_info(std::vector<std::string> data)
             }
         }
         else{
-            return -2;
+            return -2; // сделать через enum
         }
     }else{
         return -2;
@@ -269,7 +275,7 @@ int set_pause_state(uint task_id, bool state){
     }
     pthread_mutex_unlock(&g_task_pull_mutex);
 
-    // TODO: использовать trylock??
+    // TODO: использовать trylock?? или лок с таймаутом (только в основной задачи)
     pthread_mutex_lock(&task_info_p->obj_mutex);
     int status = task_info_p->status;
     if ((status == TASK_WORKS) || (status == TASK_WAITING))
@@ -316,7 +322,7 @@ int start_task(std::vector<std::string> data){
             return -2;
     }
     task_info->delay_sec = delay;
-    task_info->task_id = g_task_coun;
+    task_info->task_id = g_task_coun++; // если сделать g_task_coun аtomic, то можно будет start_task из нескольких потоков
     task_info->pt_id = t1;
     task_info->in_proccess = true;
 
@@ -326,7 +332,6 @@ int start_task(std::vector<std::string> data){
     pthread_mutex_unlock(&g_task_pull_mutex);
     // создаю задачу
     pthread_create(&t1, NULL, simple_thread,  (void*)task_info);
-    g_task_coun++;
 
 }
 
