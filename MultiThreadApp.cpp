@@ -77,8 +77,6 @@ int add_percentage(task_t *tsk, int percent){
     return ret;
 }
 
-/* @brief проверка являеться ли строка числом
- * @return булевое значение */
 bool is_number(const string& s)
 {
     string::const_iterator it = s.begin();
@@ -334,7 +332,7 @@ int task_mannger(string cmd)
         uint task_id = uint(stoi(commands[1]));
         set_pause_state(task_id, PAUSE_STATE);
     }
-    else if (commands[0] == CONTINUE_TASK) // поставить задачу на паузу
+    else if (commands[0] == CONTINUE_TASK) // снять задачу с паузы
     {
         uint task_id = uint(stoi(commands[1]));
         set_pause_state(task_id, CONTINUE_STATE);
@@ -346,7 +344,7 @@ int task_mannger(string cmd)
     return 0;
 }
 
-int multi_hread_main()
+int posix_multi_hread_main()
 {
     int res;
     string cmd;
