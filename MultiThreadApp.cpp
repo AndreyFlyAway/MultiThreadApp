@@ -1,12 +1,11 @@
 //
 // Created by user on 12.04.20.
 //
-// TODO: заменить весб стандартный вывод на log4cplus??
+// TODO: заменить весь стандартный вывод на log4cplus??
 #include "MultiThreadApp.h"
 
 using namespace std;
 
-// TODO: сделать
 /* command constants*/
 static const string EXIT_CMD = "q";
 static const string START_TASK_CMD = "s";
@@ -29,24 +28,16 @@ static const int UNREC_CMD = 2;//
 
 
 /* для функции set_pause_state */
-const bool PAUSE_STATE = false;
-const bool CONTINUE_STATE = true;
+static const bool PAUSE_STATE = false;
+static const bool CONTINUE_STATE = true;
 
-// TODO: p
 static pthread_mutex_t g_task_pull_mutex;
 static map<uint, task_t*> g_task_pull;
 
-// TODO: заменить на hash-таблиу?
-/* вспомогательные функции */
-/* из-за частых вызовов мьютекса код стал перегруженным, поэтому отдельные действия вынес в отдельные функции */
-/*
- * @brief копирование данных структуры из пула задач по id задачи
- * @return 0 если задачи есть в пуле задач, 1 если нету
- */
 int get_task_by_id(uint task_id, task_t &trgt){
     int res = 0;
     pthread_mutex_lock(&g_task_pull_mutex);
-    map<uint, task_t*>::iterator  it=g_task_pull.find(task_id);
+    map<uint, task_t*>::iterator it=g_task_pull.find(task_id);
     if (it != g_task_pull.end())
     {
         trgt = *(g_task_pull[task_id]);
@@ -59,10 +50,6 @@ int get_task_by_id(uint task_id, task_t &trgt){
     return res;
 }
 
-/*
- * @brief копирование данных конктретного элемента по ссылке
- * @return возвращает значение структру
- */
 task_t get_task_by_ref(task_t *trgt){
     pthread_mutex_lock(&(trgt->obj_mutex));
     task_t ret = *trgt;
@@ -70,10 +57,6 @@ task_t get_task_by_ref(task_t *trgt){
     return ret;
 }
 
-/*
- * @brief установдение статуса работы задачи в зависимости от наличия задержки и возвращает величину задержки
- * @return величина задержки
- */
 void set_task_status(task_t *tsk, int status){
     pthread_mutex_lock(&(tsk->obj_mutex));
     tsk->status = status;
@@ -81,10 +64,6 @@ void set_task_status(task_t *tsk, int status){
     pthread_mutex_unlock(&(tsk->obj_mutex));
 }
 
-/*
- * @brief установка процента выполнения
- * @return количесетво установленных процентов
- */
 int add_percentage(task_t *tsk, int percent){
     tsk->in_proccess = true;
     pthread_mutex_lock(&tsk->obj_mutex);
@@ -108,7 +87,7 @@ bool is_number(const string& s)
 }
 
 /* @brief простая функция для потока */
-void *simple_thread(void *args){
+static void *simple_thread(void *args){
     // TODO: слишком много захватов мьютекса
     // TODO: с сылкой на объект происходит работа, хотя в этот момент она находиться в пуле задачь, так же в этот
     //       момент ее уже могут удалить - это неверно. Тут нужно использовать мьютексы для конкретных данных и флаг
@@ -148,7 +127,7 @@ void *simple_thread(void *args){
     // как должно быть:
     set_task_status(task_info_p, TASK_ENDING);
     // удаляю элемент из пула задач
-    // TODO: проверять не работают ли с эти контейнером, а потом удалять объект (или после)
+    // TODO: проверять не работают ли с эти контейнером, а потом удалять объект (или после) через атомарную переменную, например
     pthread_mutex_lock(&g_task_pull_mutex);
     g_task_pull.erase (task_info_v.task_id);
     pthread_mutex_unlock(&g_task_pull_mutex);
@@ -157,8 +136,6 @@ void *simple_thread(void *args){
     delete task_info_p;
 }
 
-/* @brief вывод информации о задаче, не предполагается, что эта функция должна работать напрямую с объектами,
- * к которым может быть одновременный доступ, поэтому мьютексы не используются */
 void print_task_info(task_t *tsk){
     int stat = tsk->status;
     int rest_time;
@@ -179,11 +156,6 @@ void print_task_info(task_t *tsk){
     }
 }
 
-/* @brief вызов информации о задаче
- * @return 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
- * s-2 если неверный формат команды
- * */
-// TODO: продумать интерфейс
 int get_task_info(std::vector<std::string> data)
 {
     // проинициализировать
@@ -225,8 +197,6 @@ int get_task_info(std::vector<std::string> data)
 
 }
 
-/* @brief вывод справки об использовании
- * @param wrong_fmt: используеться, если нужно вывести Wrong command format!"*/
 void print_help(int wrong_fmt){
     switch (wrong_fmt){
         case WRONG_FMT:
@@ -252,14 +222,6 @@ void print_help(int wrong_fmt){
            EXIT_CMD.c_str());
 }
 
-/* @brief используеться для приостановки (на паузу) или запуска задачи
- * @return код результата:
- * 0 - все ок
- * 1 - нет задачи с данным id
- * 2 - статус задачи совпадает с тем, что уже имеется, т.е. например если задача ставиться на паузу, а она уже
- *     на паузе
- * 3 - задача в процессе завершения
- * */
 int set_pause_state(uint task_id, bool state){
     int res = 0;
     task_t *task_info_p;
@@ -335,9 +297,6 @@ int start_task(std::vector<std::string> data){
 
 }
 
-/* @brief обработчик консольных сообщений
- * @return 0 если все ок, 1 если пришла команда завершения, -1 если все плохо
- * */
 int task_mannger(string cmd)
 {
     /* разделяю строку по словам */
@@ -387,7 +346,6 @@ int task_mannger(string cmd)
     return 0;
 }
 
-/* @brief  точка входа в стек */
 int multi_hread_main()
 {
     int res;
