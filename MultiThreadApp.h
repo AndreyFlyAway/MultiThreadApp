@@ -19,6 +19,7 @@
 // TODO: релизовать мьютексы для конрктерных полей данных
 // TODO: релизовать флаг, который говорит о том, что со структурой ведеться работа, атомарная
 // TODO: возможно есть смысл перенести in_proccess в состав атрибута status
+// TODO: заменить posix-потоки на std
 struct task_t {
     pthread_mutex_t obj_mutex;         // используться для доступа к текущему объекту
     pthread_mutex_t pause_flag_mutex;  // используться для работы с флагом паузы
@@ -93,6 +94,11 @@ int get_task_info(std::vector<std::string> data);
 void print_help(int wrong_fmt=0);
 /* main work */
 
+/* @brief запуск задачи
+* @return 0 если все ок, -1 если не удалось запустить задачу, -2 если неверный формат команды
+* */
+int start_task(std::vector<std::string> data);
+
 /* @brief обработчик консольных сообщений
  * @return 0 если все ок, 1 если пришла команда завершения, -1 если все плохо
  * */
@@ -109,6 +115,6 @@ int task_mannger(std::string cmd);
 int set_pause_state(uint task_id, bool state);
 
 /* @brief  точка входа */
-int multi_hread_main();
+int posix_multi_hread_main();
 
 #endif //MULTITHREADAPP_MULTITHREADAPP_H

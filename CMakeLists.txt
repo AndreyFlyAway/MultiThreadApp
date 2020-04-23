@@ -3,5 +3,5 @@ project(MultiThreadApp)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(MultiThreadApp main.cpp MultiThreadApp.cpp)
+add_executable(MultiThreadApp main.cpp stdTaskManager.cpp Task_t.cpp)
 target_link_libraries(MultiThreadApp pthread)

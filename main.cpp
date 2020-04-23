@@ -1,7 +1,7 @@
-#include "MultiThreadApp.h"
+#include "stdTaskManager.h"
 
 int main()
 {
-    multi_hread_main();
+    std_multi_hread_main();
     return 0;
 }
