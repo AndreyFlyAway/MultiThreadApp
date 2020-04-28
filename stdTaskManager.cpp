@@ -12,8 +12,8 @@ static const std::string PAUSE_TASK = "p";
 static const std::string CONTINUE_TASK = "c";
 
 /* look function print_help */
-static const int WRONG_FMT = 1;//
-static const int UNREC_CMD = 2;//
+static const int WRONG_FMT = 1;
+static const int UNREC_CMD = 2;
 
 // global list with tasks
 static std::mutex g_task_list_mutex;
@@ -34,8 +34,8 @@ void print_help(int wrong_fmt){
            "  %s [time]\n"
            "Information about all tasks:\n"
            "  %s\n"
-           "Information about all one task by ID:"
-           "  %s [task ID]\n"
+           "Information about one task by ID:"
+           "  %s [task ID]\n\n"
            "Enter '%s' to quit\n",
            START_TASK_CMD.c_str(),
            START_TASK_CMD.c_str(),
@@ -69,12 +69,17 @@ int start_task(std::vector<std::string> data)
         else
             return -2;
     }
-
-    std::shared_ptr<Task_t> task_p;
-    task_p = std::shared_ptr<Task_t>(new Task_t(g_task_coun, delay));
-    std::thread my_thread(*task_p);
-    const std::lock_guard<std::mutex> lock(g_task_list_mutex);
-    g_task_list[g_task_coun++] = task_p;
+    try{
+        std::shared_ptr<Task_t> task_p;
+        task_p = std::shared_ptr<Task_t>(new Task_t(g_task_coun, delay));
+        std::thread my_thread(*task_p);
+        my_thread.detach();
+        const std::lock_guard<std::mutex> lock(g_task_list_mutex);
+        g_task_list[g_task_coun++] = task_p;
+    }
+    catch (const std::exception &exc){
+        std::cerr << exc.what();
+    }
 }
 
 int task_mannger(std::string cmd)
@@ -102,6 +107,10 @@ int task_mannger(std::string cmd)
     }
     else if (commands[0] == INFO_CMD) // printing info about task / вызов информации о задаче
     {
+//        int res = get_task_info(commands);
+//        if (res == -2){
+//            print_help(WRONG_FMT);
+//        }
     }
     else if (commands[0] == PAUSE_TASK) // pause task / поставить задачу на паузу
     {

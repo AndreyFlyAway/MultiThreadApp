@@ -22,8 +22,14 @@ bool is_number(const std::string& s);
 * */
 int start_task(std::vector<std::string> data);
 
+/* @brief вызов информации о задаче
+ * @return 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
+ * -2 если неверный формат команды
+ * */
+int get_task_info(std::vector<std::string> data);
+
 /* @brief  command manager / обработчик консольных сообщений
- * @return 0 if all is OK, 1 if task in exit task status, -1 if something bad happened
+ * @return 0 if all is OK, 1 if task has exit status, -1 if something bad happened
  *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
  * */
 int task_mannger(std::string cmd);

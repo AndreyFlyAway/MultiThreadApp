@@ -17,6 +17,7 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <ctime>
 
 
 /* other */
@@ -35,17 +36,22 @@ const int TASK_PAUSE = 3;
  */
 class Task_t
 {
-private:
-
 public:
 //    std::mutex obj_mutex;              // use to get save thread access to object data / используться для доступа к текущему объекту
-    time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
+    std::time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
     uint task_id;                      // is set by user / назначется вручную
     int delay_sec;                     // delay for starting of task / задержка запуска задачи
     int progress ;                     // progress of task / прогресс задачи
     int status;                        // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
     bool in_proccess;                  // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
 //    int pause_flag (false);            // pause flag / флаг паузы потока, atomic флаг.
+
+private:
+    /* @brief printing information about tasks, supposed to this function works directly with object
+    * another words this function doesn't provide safe multithread access
+    * вывод информации о задаче, не предполагается, что эта функция должна работать напрямую с объектами,
+    * к которым может быть одновременный доступ, поэтому мьютексы не используются */
+    std::string str_task_info();
 
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
