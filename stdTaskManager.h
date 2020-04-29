@@ -22,8 +22,16 @@ bool is_number(const std::string& s);
 * */
 int start_task(std::vector<std::string> data);
 
-/* @brief вызов информации о задаче
- * @return 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
+/*
+ * @brief get pointer of task / получение указателя на структуру
+ * @return pointer to task or nullptr if there are no task with current id /
+ * указатель на задачу или nullptr если нет такой задачи
+ */
+std::shared_ptr<Task_t> get_task_by_id(int task_id);
+
+/* @brief printing information about one task or all task / вызов информации о задаче
+ * @return return code: 0 - OK, -1 - failed to get task data, -2 - wrong command format /
+ * 0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
  * -2 если неверный формат команды
  * */
 int get_task_info(std::vector<std::string> data);

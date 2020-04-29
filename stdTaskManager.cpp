@@ -69,17 +69,69 @@ int start_task(std::vector<std::string> data)
         else
             return -2;
     }
-    try{
+    std::shared_ptr<Task_t> task_p;
+    task_p = std::shared_ptr<Task_t>(new Task_t(g_task_coun, delay));
+    // TODO: I am not sure about this std::ref to prevent copying of mutex
+    std::thread my_thread(std::ref(*task_p));
+    my_thread.detach();
+    const std::lock_guard<std::mutex> lock(g_task_list_mutex);
+    g_task_list[g_task_coun++] = task_p;
+    std::unique_ptr<std::mutex> obj_mutex;
+}
+
+std::shared_ptr<Task_t> get_task_by_id(int task_id){
+    std::shared_ptr<Task_t> res;
+    g_task_list_mutex.lock();
+    auto it=g_task_list.find(task_id);
+    if (it != g_task_list.end())
+    {
+        res = g_task_list[task_id];
+    }
+    else{
+        res = nullptr;
+    }
+    g_task_list_mutex.unlock();
+    return res;
+}
+
+int get_task_info(std::vector<std::string> data)
+{
+    if (data.size() == 1) // вывод инофрмвции по всем задачам
+    {
+        std::string info_str = "";
         std::shared_ptr<Task_t> task_p;
-        task_p = std::shared_ptr<Task_t>(new Task_t(g_task_coun, delay));
-        std::thread my_thread(*task_p);
-        my_thread.detach();
         const std::lock_guard<std::mutex> lock(g_task_list_mutex);
-        g_task_list[g_task_coun++] = task_p;
+        for (auto it=g_task_list.begin(); it!=g_task_list.end(); ++it)
+        {
+            // TODO: how to prevent access to object if task in ending status?
+            task_p = it->second;
+            info_str = task_p->str_task_info();
+            std::cout << info_str << std::endl;
+        }
     }
-    catch (const std::exception &exc){
-        std::cerr << exc.what();
+    else if (data.size() == 2) // printing info for one task by id / вывод инофрмвции по конкрентно одной задаче
+    {
+        if (is_number(data[1]))
+        {
+            uint task_id = uint(stoi(data[1]));
+            std::shared_ptr<Task_t> task_p = get_task_by_id(task_id);
+            if (task_p == nullptr)
+            {
+                std::string info_str = task_p->str_task_info();
+                std:: cout << info_str << std::endl;
+            }
+            else{
+                printf("There is no task with task id %u\n", task_id);
+            }
+        }
+        else{
+            return -2; // TODO: use enum / сделать через enum
+        }
+    }else{
+        return -2;
     }
+    return 0;
+
 }
 
 int task_mannger(std::string cmd)
@@ -107,10 +159,10 @@ int task_mannger(std::string cmd)
     }
     else if (commands[0] == INFO_CMD) // printing info about task / вызов информации о задаче
     {
-//        int res = get_task_info(commands);
-//        if (res == -2){
-//            print_help(WRONG_FMT);
-//        }
+        int res = get_task_info(commands);
+        if (res == -2){
+            print_help(WRONG_FMT);
+        }
     }
     else if (commands[0] == PAUSE_TASK) // pause task / поставить задачу на паузу
     {
