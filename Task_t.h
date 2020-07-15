@@ -38,8 +38,9 @@ class Task_t
 private:
 
 public:
-//    std::mutex obj_mutex;              // use to get save thread access to object data / используться для доступа к текущему объекту
-    time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
+//    std::shared_ptr<std::mutex> obj_mutex;              // use to get save thread access to object data / используться для доступа к текущему объекту
+	std::mutex obj_mutex;
+	time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
     uint task_id;                      // is set by user / назначется вручную
     int delay_sec;                     // delay for starting of task / задержка запуска задачи
     int progress ;                     // progress of task / прогресс задачи
@@ -50,12 +51,14 @@ public:
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
     Task_t(uint id, int delay_sec);
+//	Task_t(const Task_t &t) = delete;
+//	Task_t & operator=(const Task_t&) = delete;\
 
     // thread function / поточная функция
-    void thread_operations() const ;
+    void thread_operations() ;
     // увидел такое использование в книге Уильямса "Параелельное программирование, эта перегруpзка
     // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
-    void operator()() const;
+    void operator()();
 };
 
 

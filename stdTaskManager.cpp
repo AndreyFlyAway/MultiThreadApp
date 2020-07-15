@@ -3,6 +3,7 @@
 //
 
 #include "stdTaskManager.h"
+#include <shared_mutex>
 
 /* command constants*/
 static const std::string EXIT_CMD = "q";
@@ -16,7 +17,7 @@ static const int WRONG_FMT = 1;//
 static const int UNREC_CMD = 2;//
 
 // global list with tasks
-static std::mutex g_task_list_mutex;
+static std::shared_mutex g_task_list_mutex;
 static std::map<uint, std::shared_ptr<Task_t>> g_task_list;
 
 void print_help(int wrong_fmt){
@@ -51,10 +52,21 @@ bool is_number(const std::string& s)
     return !s.empty() && it == s.end();
 }
 
+void thread_operations() {
+	// std::this_thread::sleep_for(std::chrono::seconds(2)); это для сна
+	for (int i = 0; i < 30 ; i++)
+	{
+		// main thread work
+		std::cout << "Task # works" << std::endl;
+		usleep(500000);
+	}
+	std::cout << "Task # ends works" << std::endl;
+}
 int start_task(std::vector<std::string> data)
 {
     // TODO: make warning if amount of tasks is over 1000 (for example) / сделать вывод предупреждения, если запущенных задач стало больше 1000, например
-    static uint g_task_coun = 1;
+    static uint g_task_count = 1;
+    int ret = 0;
     int delay = 0;
 
     if (data.size() != 2)
@@ -70,11 +82,27 @@ int start_task(std::vector<std::string> data)
             return -2;
     }
 
-    std::shared_ptr<Task_t> task_p;
-    task_p = std::shared_ptr<Task_t>(new Task_t(g_task_coun, delay));
-    std::thread my_thread(*task_p);
-    const std::lock_guard<std::mutex> lock(g_task_list_mutex);
-    g_task_list[g_task_coun++] = task_p;
+	std::shared_ptr<Task_t> task = std::make_shared<Task_t>(g_task_count, delay);
+	std::thread th(&Task_t::thread_operations, task);
+    th.join();
+	std::unique_lock lock(g_task_list_mutex);
+	g_task_list[g_task_count++] = task;
+	return ret;
+}
+
+int get_task_info(uint task_id)
+{
+	int res = 0;
+	std::shared_lock lock(g_task_list_mutex);
+//	std::shared_ptr<Task_t> task = g_task_list[task_id];
+	auto it = g_task_list.find(task_id);
+	if (it != g_task_list.end())
+	{
+		// printing info
+	}
+
+    // TODO: unlock mutex after reading data of task and print info
+    return res;
 }
 
 int task_mannger(std::string cmd)
