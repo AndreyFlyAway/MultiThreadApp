@@ -67,6 +67,20 @@ public:
     void thread_operations() ;
     // running thread / запуск задачи
 	void run();
+
+	// TODO: delete this function if it unused
+	/*
+	 * @brief return task id
+	 * @return task id
+	 */
+	uint get_task_id();
+
+	/*
+	 * @brief generating info about task
+	 * @return string info
+	 */
+	std::string get_task_info();
+
     // увидел такое использование в книге Уильямса "Параелельное программирование, эта перегруpзка
     // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
     void operator()();

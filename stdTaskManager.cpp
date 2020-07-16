@@ -70,23 +70,33 @@ int TaskPool::start_task(std::vector<std::string> data)
     }
 
 	std::shared_ptr<Task_t> task = std::make_shared<Task_t>(g_task_count, delay);
+	std::thread t(&TaskPool::thread_wrapper, this, task, g_task_count);
+	t.detach();
+	std::unique_lock lock(g_task_list_mutex);
+	g_task_list[g_task_count] = task;
+	g_task_count++;
+	return ret;
+}
+
+void TaskPool::thread_wrapper(std::shared_ptr<Task_t> task, uint task_id)
+{
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
-	g_task_list[g_task_count++] = task;
-	return ret;
+	g_task_list.erase (task_id);
 }
 
 int TaskPool::get_task_info(uint task_id)
 {
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);
-//	std::shared_ptr<Task_t> task = g_task_list[task_id];
+	std::shared_ptr<Task_t> task = g_task_list[task_id];
 	auto it = g_task_list.find(task_id);
 	if (it != g_task_list.end())
 	{
-		// printing info
+
 	}
 
+	printf("Tasks in pool %d.\n", g_task_list.size());
     // TODO: unlock mutex after reading data of task and print info
     return res;
 }
@@ -116,6 +126,12 @@ int TaskPool::task_mannger(std::string cmd)
     }
     else if (commands[0] == INFO_CMD) // printing info about task / вызов информации о задаче
     {
+    	uint id = 0;
+		if (is_number(commands[1]))
+		{
+			id = uint(std::stoi(commands[1]));
+		}
+		get_task_info(id);
     }
     else if (commands[0] == PAUSE_TASK) // pause task / поставить задачу на паузу
     {

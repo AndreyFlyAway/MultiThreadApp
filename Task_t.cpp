@@ -18,13 +18,25 @@ void Task_t::thread_operations() {
     for (int i = 0; i < 30 ; i++)
     {
         // main thread work
-        std::cout << "Task #" << task_id << " works" << std::endl;
+//        std::cout << "Task #" << task_id << " works" << std::endl;
         usleep(500000);
     }
-	std::cout << "Task #" << task_id << " ends works" << std::endl;
+//	std::cout << "Task #" << task_id << " ends works" << std::endl;
 	std::unique_lock lock(obj_mutex);
 	status = State::TASK_END;
 	progress = 100;
+}
+
+uint Task_t::get_task_id()
+{
+	std::lock_guard<std::mutex> lock(obj_mutex);
+	return task_id;
+}
+
+std::string Task_t::get_task_info()
+{
+	std::string res;
+
 }
 
 void Task_t::operator()() {
@@ -33,8 +45,11 @@ void Task_t::operator()() {
     printf("a");
 }
 
+
+
 void Task_t::run() {
 //    this->thread_operations();
-	std::thread t(&Task_t::thread_operations, this);
-	cur_thread = std::move(t);
+//	std::thread t(&Task_t::thread_operations, this);
+//	cur_thread = std::move(t);
+	thread_operations();
 }
