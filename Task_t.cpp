@@ -9,7 +9,7 @@ Task_t::Task_t(uint id, int delay){
     task_id = id;
     delay_sec = delay;
     progress = 0;
-    status = TASK_WAITING;
+    status = State::TASK_WAITING;
     time_started = 0;
 }
 
@@ -22,10 +22,19 @@ void Task_t::thread_operations() {
         usleep(500000);
     }
 	std::cout << "Task #" << task_id << " ends works" << std::endl;
+	std::unique_lock lock(obj_mutex);
+	status = State::TASK_END;
+	progress = 100;
 }
 
 void Task_t::operator()() {
 //    this->thread_operations();
     thread_operations();
     printf("a");
+}
+
+void Task_t::run() {
+//    this->thread_operations();
+	std::thread t(&Task_t::thread_operations, this);
+	cur_thread = std::move(t);
 }

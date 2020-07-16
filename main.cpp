@@ -2,6 +2,7 @@
 
 int main()
 {
-    std_multi_hread_main();
+	TaskPool task_pool;
+	task_pool.std_multi_hread_main();
     return 0;
 }

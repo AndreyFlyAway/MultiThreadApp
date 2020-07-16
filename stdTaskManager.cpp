@@ -3,7 +3,6 @@
 //
 
 #include "stdTaskManager.h"
-#include <shared_mutex>
 
 /* command constants*/
 static const std::string EXIT_CMD = "q";
@@ -16,11 +15,16 @@ static const std::string CONTINUE_TASK = "c";
 static const int WRONG_FMT = 1;//
 static const int UNREC_CMD = 2;//
 
-// global list with tasks
-static std::shared_mutex g_task_list_mutex;
-static std::map<uint, std::shared_ptr<Task_t>> g_task_list;
+/* @brief checking if word is a number / проверка являеться ли число строкой
+* @return boolean true/false / булево значение */
+bool is_number(const std::string& s)
+{
+	std::string::const_iterator it = s.begin();
+	while (it != s.end() && isdigit(*it)) ++it;
+	return !s.empty() && it == s.end();
+}
 
-void print_help(int wrong_fmt){
+void TaskPool::print_help(int wrong_fmt){
     switch (wrong_fmt){
         case WRONG_FMT:
             printf("Wrong command format!\n");
@@ -45,24 +49,7 @@ void print_help(int wrong_fmt){
            EXIT_CMD.c_str());
 }
 
-bool is_number(const std::string& s)
-{
-    std::string::const_iterator it = s.begin();
-    while (it != s.end() && isdigit(*it)) ++it;
-    return !s.empty() && it == s.end();
-}
-
-void thread_operations() {
-	// std::this_thread::sleep_for(std::chrono::seconds(2)); это для сна
-	for (int i = 0; i < 30 ; i++)
-	{
-		// main thread work
-		std::cout << "Task # works" << std::endl;
-		usleep(500000);
-	}
-	std::cout << "Task # ends works" << std::endl;
-}
-int start_task(std::vector<std::string> data)
+int TaskPool::start_task(std::vector<std::string> data)
 {
     // TODO: make warning if amount of tasks is over 1000 (for example) / сделать вывод предупреждения, если запущенных задач стало больше 1000, например
     static uint g_task_count = 1;
@@ -83,14 +70,13 @@ int start_task(std::vector<std::string> data)
     }
 
 	std::shared_ptr<Task_t> task = std::make_shared<Task_t>(g_task_count, delay);
-	std::thread th(&Task_t::thread_operations, task);
-    th.join();
+	task->run();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count++] = task;
 	return ret;
 }
 
-int get_task_info(uint task_id)
+int TaskPool::get_task_info(uint task_id)
 {
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);
@@ -105,7 +91,7 @@ int get_task_info(uint task_id)
     return res;
 }
 
-int task_mannger(std::string cmd)
+int TaskPool::task_mannger(std::string cmd)
 {
     /* разделяю строку по словам */
     std::stringstream ss(cmd);
@@ -144,7 +130,7 @@ int task_mannger(std::string cmd)
     return 0;
 }
 
-int std_multi_hread_main()
+int TaskPool::std_multi_hread_main()
 {
     int res;
     std::string cmd;
