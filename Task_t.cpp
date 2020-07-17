@@ -3,6 +3,7 @@
 //
 
 #include <string>
+#include <shared_mutex>
 #include "Task_t.h"
 
 Task_t::Task_t(uint id, int delay){
@@ -27,16 +28,23 @@ void Task_t::thread_operations() {
 	progress = 100;
 }
 
-uint Task_t::get_task_id()
+uint Task_t::get_task_id() const
 {
 	std::lock_guard<std::mutex> lock(obj_mutex);
 	return task_id;
 }
 
-std::string Task_t::get_task_info()
+std::string Task_t::get_task_info() const
 {
-	std::string res;
-
+	std::shared_lock lock(obj_mutex);
+	// copy values then free lock
+	auto _task_id = task_id;
+	auto _delay_sec = delay_sec;
+	auto _progress = progress;
+	auto _status = status;
+	lock.unlock();
+	std::string res = "Task #" + std::to_string(_task_id) + " Progress " + std::to_string(_progress) + "\n";
+	return res;
 }
 
 void Task_t::operator()() {

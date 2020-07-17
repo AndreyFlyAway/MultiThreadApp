@@ -27,7 +27,8 @@ const int TASK_WAITING = 2;
 const int TASK_PAUSE = 3;
 const int TASK_END = 4;
 
-enum class State {TASK_WORKS,
+enum class State {
+	TASK_WORKS,
 	TASK_WAITING,
 	TASK_PAUSE,
 	TASK_END
@@ -73,13 +74,13 @@ public:
 	 * @brief return task id
 	 * @return task id
 	 */
-	uint get_task_id();
+	uint get_task_id() const;
 
 	/*
 	 * @brief generating info about task
 	 * @return string info
 	 */
-	std::string get_task_info();
+	std::string get_task_info() const;
 
     // увидел такое использование в книге Уильямса "Параелельное программирование, эта перегруpзка
     // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
