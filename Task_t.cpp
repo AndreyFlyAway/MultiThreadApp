@@ -3,7 +3,6 @@
 //
 
 #include <string>
-#include <shared_mutex>
 #include "Task_t.h"
 
 Task_t::Task_t(uint id, int delay){
@@ -15,7 +14,9 @@ Task_t::Task_t(uint id, int delay){
 }
 
 void Task_t::thread_operations() {
-    // std::this_thread::sleep_for(std::chrono::seconds(2)); это для сна
+	obj_mutex.lock();
+	status = State::TASK_WORKS;
+	obj_mutex.unlock();
     for (int i = 0; i < 30 ; i++)
     {
         // main thread work
@@ -23,27 +24,43 @@ void Task_t::thread_operations() {
         usleep(500000);
     }
 //	std::cout << "Task #" << task_id << " ends works" << std::endl;
-	std::unique_lock lock(obj_mutex);
+
+	obj_mutex.lock();
 	status = State::TASK_END;
+	obj_mutex.unlock();
 	progress = 100;
 }
 
-uint Task_t::get_task_id() const
+std::string Task_t::get_task_info()
 {
-	std::lock_guard<std::mutex> lock(obj_mutex);
-	return task_id;
-}
-
-std::string Task_t::get_task_info() const
-{
-	std::shared_lock lock(obj_mutex);
 	// copy values then free lock
+	std::unique_lock<std::mutex> lock_m(obj_mutex, std::defer_lock);
+	lock_m.lock();
 	auto _task_id = task_id;
 	auto _delay_sec = delay_sec;
 	auto _progress = progress;
 	auto _status = status;
-	lock.unlock();
-	std::string res = "Task #" + std::to_string(_task_id) + " Progress " + std::to_string(_progress) + "\n";
+	auto _time_started = time_started;
+	lock_m.unlock();
+	std::string str_status;
+
+	int rest_time;
+	time_t now;
+	switch (_status)
+	{
+		case State::TASK_WORKS:
+			str_status = "in progress" ;
+			break;
+		case State::TASK_WAITING:
+			time(&now);
+			rest_time = _delay_sec - (int)difftime(now, _time_started);
+			str_status = "is waiting (Time until start: " + std::to_string(rest_time) + " )" ;
+			break;
+		case State::TASK_PAUSE:
+			str_status = "in pause";
+			break;
+	}
+	std::string res = "Task #" + std::to_string(_task_id) + " ; staus: " + str_status + " ;progress " + std::to_string(_progress) + "\n";
 	return res;
 }
 

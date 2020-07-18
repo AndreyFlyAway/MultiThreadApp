@@ -88,13 +88,9 @@ int TaskPool::get_task_info(uint task_id)
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);
 	std::shared_ptr<Task_t> task = g_task_list[task_id];
-	auto it = g_task_list.find(task_id);
-	if (it != g_task_list.end())
-	{
 
-	}
-
-	printf("Tasks in pool %d.\n", g_task_list.size());
+	std::cout << task->get_task_info() << std::endl;
+	std::cout << "Tasks in pool " << g_task_list.size() << std::endl;
     // TODO: unlock mutex after reading data of task and print info
     return res;
 }
@@ -127,6 +123,7 @@ int TaskPool::task_mannger(std::string cmd)
     	uint id = 0;
 		if (is_number(commands[1]))
 		{
+			// TODO: for now simple call without checking - it's just for test s
 			id = uint(std::stoi(commands[1]));
 		}
 		get_task_info(id);
