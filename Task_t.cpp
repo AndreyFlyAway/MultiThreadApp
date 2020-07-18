@@ -31,7 +31,7 @@ void Task_t::thread_operations() {
 	progress = 100;
 }
 
-std::string Task_t::get_task_info()
+std::string Task_t::get_task_info() const
 {
 	// copy values then free lock
 	std::unique_lock<std::mutex> lock_m(obj_mutex, std::defer_lock);
@@ -69,8 +69,6 @@ void Task_t::operator()() {
     thread_operations();
     printf("a");
 }
-
-
 
 void Task_t::run() {
 //    this->thread_operations();

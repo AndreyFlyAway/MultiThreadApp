@@ -20,7 +20,7 @@ public:
 	 *                  добавить сообщение "неверный формат" если установлено значение 1
 	 * @param wrong_fmt: used if with simple help need print "Wrong command format!"
 	 *                   используеться, если нужно вывести Wrong command format!"*/
-	void print_help(int wrong_fmt=0);
+	void print_help(int wrong_fmt=0) const;
 
 	/* @brief starting task / запуск задачи
 	 * @param data string with argument for starting / строка с аргументами для старта задачи
@@ -48,7 +48,7 @@ public:
 	 * @return 0 if all is OK, 1 if task in exit task status, -1 if something bad happened
 	 *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
 	 * */
-	int task_mannger(std::string cmd);
+	int task_mannger(const std::string cmd);
 
 	/* @brief  function for wrapping task, this function delete task from task list when it ends
 	 *         his work
@@ -61,7 +61,7 @@ public:
 	 *        использовать мьютекс
 	 * @return
 	 * */
-	void thread_wrapper(std::shared_ptr<Task_t> task, uint task_id);
+	void thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id);
 
 
 	/* @brief точка входа / entry point*/

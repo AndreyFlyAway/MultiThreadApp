@@ -24,7 +24,8 @@ bool is_number(const std::string& s)
 	return !s.empty() && it == s.end();
 }
 
-void TaskPool::print_help(int wrong_fmt){
+void TaskPool::print_help(int wrong_fmt) const
+{
     switch (wrong_fmt){
         case WRONG_FMT:
             std::cout << "Wrong command format!" << std::endl;
@@ -50,12 +51,13 @@ void TaskPool::print_help(int wrong_fmt){
 int TaskPool::start_task(const std::vector<std::string> &data)
 {
     // TODO: make warning if amount of tasks is over 1000 (for example) / сделать вывод предупреждения, если запущенных задач стало больше 1000, например
-    static uint g_task_count = 1;
-    int ret = 0;
-    int delay = 0;
 
     if (data.size() != 2)
         return -2;
+
+	int ret = 0;
+	int delay = 0;
+	static uint g_task_count = 1;
 
     if (data[1] == "now"){
         delay = 0;
@@ -76,7 +78,7 @@ int TaskPool::start_task(const std::vector<std::string> &data)
 	return ret;
 }
 
-void TaskPool::thread_wrapper(std::shared_ptr<Task_t> task, uint task_id)
+void TaskPool::thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id)
 {
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
@@ -95,7 +97,7 @@ int TaskPool::get_task_info(uint task_id)
     return res;
 }
 
-int TaskPool::task_mannger(std::string cmd)
+int TaskPool::task_mannger(const std::string cmd)
 {
     /* разделяю строку по словам */
     std::stringstream ss(cmd);
