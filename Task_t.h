@@ -2,8 +2,7 @@
 // Created by user on 22.04.20.
 //
 
-#ifndef MULTITHREADAPP_TASKT_H
-#define MULTITHREADAPP_TASKT_H
+#pragma once
 
 #include <iostream>
 #include <map>
@@ -86,6 +85,3 @@ public:
     // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
     void operator()();
 };
-
-
-#endif //MULTITHREADAPP_TASKT_H

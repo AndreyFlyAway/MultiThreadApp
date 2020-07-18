@@ -27,7 +27,7 @@ public:
 	 * @return 0 if everything is OK, -1 cant start task, -2 wrong command format
 	 *        0 если все ок, -1 если не удалось запустить задачу, -2 если неверный формат команды
 	* */
-	int start_task(std::vector<std::string> data);
+	int start_task(const std::vector<std::string> &data);
 
 	/* @brief stop task / остановка задачи
 	 * @param task_id task id / id задачи

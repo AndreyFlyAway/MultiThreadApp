@@ -27,29 +27,27 @@ bool is_number(const std::string& s)
 void TaskPool::print_help(int wrong_fmt){
     switch (wrong_fmt){
         case WRONG_FMT:
-            printf("Wrong command format!\n");
+            std::cout << "Wrong command format!" << std::endl;
             break;
         case UNREC_CMD:
-            printf("Unrecognized command.\n");
+			std::cout << "Unrecognized command." << std::endl;
             break;
     }
-    printf("Start task command format without delay:\n"
-           "  %s now\n"
-           "Start task command format with delay\n"
-           "  %s [time]\n"
-           "Information about all tasks:\n"
-           "  %s\n"
-           "Information about all one task by ID:"
-           "  %s [task ID]\n"
-           "Enter '%s' to quit\n",
-           START_TASK_CMD.c_str(),
-           START_TASK_CMD.c_str(),
-           INFO_CMD.c_str(),
-           INFO_CMD.c_str(),
-           EXIT_CMD.c_str());
+
+    std::cout << "Start task command format without delay:" << std::endl;
+    std::cout << START_TASK_CMD << " now" << std::endl;
+    std::cout << "Start task command format with delay" << std::endl;
+	std::cout << START_TASK_CMD << " [time]" << std::endl;
+    std::cout << "Information about all tasks:" << std::endl;
+	std::cout << INFO_CMD << std::endl;
+	std::cout << "Information about all one task by ID:" << std::endl;
+	std::cout << INFO_CMD << " [task ID]" << std::endl;
+	std::cout << "Enter " << EXIT_CMD << " to quit." << std::endl;
+
+
 }
 
-int TaskPool::start_task(std::vector<std::string> data)
+int TaskPool::start_task(const std::vector<std::string> &data)
 {
     // TODO: make warning if amount of tasks is over 1000 (for example) / сделать вывод предупреждения, если запущенных задач стало больше 1000, например
     static uint g_task_count = 1;
