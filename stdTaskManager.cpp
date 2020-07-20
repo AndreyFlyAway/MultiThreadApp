@@ -45,8 +45,6 @@ void TaskPool::print_help(int wrong_fmt) const
 	std::cout << "Information about all one task by ID:" << std::endl;
 	std::cout << INFO_CMD << " [task ID]" << std::endl;
 	std::cout << "Enter " << EXIT_CMD << " to quit." << std::endl;
-
-
 }
 
 int TaskPool::start_task(int delay)
@@ -82,10 +80,10 @@ void TaskPool::thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id)
 int TaskPool::get_task_info(uint task_id)
 {
 	int res = 0;
-	std::shared_lock lock(g_task_list_mutex);
 	std::shared_ptr<Task_t> task;
 	if (task_id > 0)
 	{
+		std::shared_lock lock(g_task_list_mutex);
 		if (g_task_list.find(task_id) != g_task_list.end())
 		{
 			task = g_task_list[task_id];
@@ -100,6 +98,7 @@ int TaskPool::get_task_info(uint task_id)
 	}
 	else
 	{
+		std::shared_lock lock(g_task_list_mutex);
 		if (g_task_list.size())
 		{
 			for( auto const& [key, val] : g_task_list)
@@ -110,11 +109,10 @@ int TaskPool::get_task_info(uint task_id)
 		}
 		else
 		{
-			std::cout << "No active tasks in poll"<< std::endl;
+			std::cout << "No active tasks in pull"<< std::endl;
 		}
 	}
 
-	// TODO: unlock mutex after reading data of task and print info
 	return res;
 }
 

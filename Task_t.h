@@ -46,23 +46,24 @@ enum class State {
 class Task_t
 {
 public:
-//    std::shared_ptr<std::mutex> obj_mutex;              // use to get save thread access to object data / используться для доступа к текущему объекту
-	// TODO: make some attributes atomic?
 	uint task_id;                      // is set by user / назначется вручную
-	time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
-    int delay_sec;                     // delay for starting of task / задержка запуска задачи
-    std::atomic<int> progress;         // progress of task / прогресс задачи
-    State status;                      // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
-    std::atomic_flag in_proccess;      // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
-    std::thread cur_thread;            // thread object for current task
-	mutable std::shared_mutex obj_mutex;
-//    int pause_flag (false);            // pause flag / флаг паузы потока, atomic флаг.
+private:
+	// TODO: make some attributes atomic?
+	time_t time_started;                 // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
+    int delay_sec;                       // delay for starting of task / задержка запуска задачи
+    std::atomic<int> progress;           // progress of task / прогресс задачи
+    State status;                        // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
+    std::atomic<bool> pause;              // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
+    std::condition_variable resume_cond; // used to resume task if ir was set in pause / используеться для снятия с паузы
+	mutable std::shared_mutex obj_mutex; // mutex for protecting data / мьютек для защиты данных
+	// TODO: not sure about this mutex
+	std::mutex pause_mutex;
 
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
     Task_t(uint id, int delay_sec);
-//	Task_t(const Task_t &t) = delete;
-//	Task_t & operator=(const Task_t&) = delete;\
+	Task_t(const Task_t &t) = delete;
+	Task_t & operator=(const Task_t&) = delete;
 
     // thread function / поточная функция
     void thread_operations() ;
@@ -75,7 +76,17 @@ public:
 	 */
 	std::string task_info() const;
 
-    // увидел такое использование в книге Уильямса "Параелельное программирование, эта перегруpзка
-    // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
-    void operator()();
+
+	/*
+	 * @brief pause task / поставить на паузу
+	 * @return 0 if OK, -1 if something bad happened
+	 */
+	int pause_task();
+
+
+	/*
+	 * @brief resume task /  возобновить задачу
+	 * @return 0 if OK, -1 if something bad happened
+	 */
+	int resume_task();
 };

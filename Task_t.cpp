@@ -5,13 +5,14 @@
 #include <string>
 #include "Task_t.h"
 
-Task_t::Task_t(uint id, int delay)
+Task_t::Task_t(uint id, int delay):
+		pause(false),
+		task_id(id),
+		delay_sec(delay),
+		progress(0),
+		status(State::TASK_WAITING),
+		time_started(0)
 {
-	task_id = id;
-	delay_sec = delay;
-	progress = 0;
-	status = State::TASK_WAITING;
-	time_started = 0;
 }
 
 void Task_t::thread_operations()
@@ -28,6 +29,12 @@ void Task_t::thread_operations()
 	obj_mutex.unlock();
 	for (int i = 0; i < 30 ; i++)
 	{
+		if (pause)
+		{
+			std::unique_lock<std::mutex> lk(pause_mutex);
+			// TODO: figure out how to use pause variable in this condition
+			resume_cond.wait(lk);
+		}
 		progress += 3;
 		usleep(500000);
 	}
@@ -62,7 +69,7 @@ std::string Task_t::task_info() const
 		case State::TASK_WAITING:
 			time(&now);
 			rest_time = _delay_sec - (int)difftime(now, _time_started);
-			str_status = "is waiting (Time until start: " + std::to_string(rest_time) + " )" ;
+			str_status = "in waiting (Time until start: " + std::to_string(rest_time) + " )" ;
 			break;
 		case State::TASK_PAUSE:
 			str_status = "in pause";
@@ -72,17 +79,19 @@ std::string Task_t::task_info() const
 	return res;
 }
 
-void Task_t::operator()()
+int Task_t::pause_task()
 {
-//    this->thread_operations();
-	thread_operations();
-	printf("a");
+	pause = true;
+}
+
+
+int Task_t::resume_task()
+{
+	pause = false;
+	resume_cond.notify_one();
 }
 
 void Task_t::run()
 {
-//    this->thread_operations();
-//	std::thread t(&Task_t::thread_operations, this);
-//	cur_thread = std::move(t);
 	thread_operations();
 }
