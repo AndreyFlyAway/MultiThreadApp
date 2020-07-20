@@ -2,8 +2,7 @@
 // Created by user on 22.04.20.
 //
 
-#ifndef MULTITHREADAPP_STDTASKMANAGER_H
-#define MULTITHREADAPP_STDTASKMANAGER_H
+#pragma once
 
 #include "Task_t.h"
 #include <shared_mutex>
@@ -11,6 +10,9 @@
 class TaskPool
 {
 public:
+	/* @brief точка входа / entry point*/
+	int std_multi_hread_main();
+protected:
 	// global list with tasks
 	std::shared_mutex g_task_list_mutex;
 	std::map<uint, std::shared_ptr<Task_t>> g_task_list;
@@ -23,11 +25,11 @@ public:
 	void print_help(int wrong_fmt=0) const;
 
 	/* @brief starting task / запуск задачи
-	 * @param data string with argument for starting / строка с аргументами для старта задачи
-	 * @return 0 if everything is OK, -1 cant start task, -2 wrong command format
-	 *        0 если все ок, -1 если не удалось запустить задачу, -2 если неверный формат команды
+	 * @param delay delay start / задержка запуска
+	 * @return 0 if everything is OK, -1 cant start task
+	 *        0 если все ок, -1 если не удалось запустить задачу
 	* */
-	int start_task(const std::vector<std::string> &data);
+	int start_task(int delay);
 
 	/* @brief stop task / остановка задачи
 	 * @param task_id task id / id задачи
@@ -36,8 +38,9 @@ public:
 	* */
 	int stop_task(uint task_id);
 
-	/* @brief printing info about task / вывод информации о задаче
-	 * @param task_id task id / id задачи
+	/* @brief printing info about single task or all tasks / вывод информации об одной задаче
+	 * @param task_id task id or id task_id equals 0 than return info about all task
+	 * 		  id задачи или елси этот праметр равен 0, то выводится информация по всем параметрам
 	 * @return 0 if OK, -1 cant take info about task (there is no task with this task id in task pull)
 	 *         0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
 	 * */
@@ -45,7 +48,7 @@ public:
 
 	/* @brief  command manager / обработчик консольных сообщений
 	 * @param task_id task id / id задачи
-	 * @return 0 if all is OK, 1 if task in exit task status, -1 if something bad happened
+	 * @return 0 if all is OK, 1 if command to exit with was executed, -1 if something bad happened
 	 *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
 	 * */
 	int task_mannger(const std::string cmd);
@@ -62,10 +65,5 @@ public:
 	 * @return
 	 * */
 	void thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id);
-
-
-	/* @brief точка входа / entry point*/
-	int std_multi_hread_main();
 };
 
-#endif //MULTITHREADAPP_STDTASKMANAGER_H

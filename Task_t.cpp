@@ -5,24 +5,25 @@
 #include <string>
 #include "Task_t.h"
 
-Task_t::Task_t(uint id, int delay){
-    task_id = id;
-    delay_sec = delay;
-    progress = 0;
-    status = State::TASK_WAITING;
-    time_started = 0;
+Task_t::Task_t(uint id, int delay)
+{
+	task_id = id;
+	delay_sec = delay;
+	progress = 0;
+	status = State::TASK_WAITING;
+	time_started = 0;
 }
 
-void Task_t::thread_operations() {
+void Task_t::thread_operations()
+{
 	obj_mutex.lock();
 	status = State::TASK_WORKS;
 	obj_mutex.unlock();
-    for (int i = 0; i < 30 ; i++)
-    {
-        // main thread work
-//        std::cout << "Task #" << task_id << " works" << std::endl;
-        usleep(500000);
-    }
+	for (int i = 0; i < 30 ; i++)
+	{
+		progress += 3;
+		usleep(500000);
+	}
 //	std::cout << "Task #" << task_id << " ends works" << std::endl;
 
 	obj_mutex.lock();
@@ -31,17 +32,18 @@ void Task_t::thread_operations() {
 	progress = 100;
 }
 
-std::string Task_t::get_task_info() const
+std::string Task_t::task_info() const
 {
 	// copy values then free lock
-	std::unique_lock<std::mutex> lock_m(obj_mutex, std::defer_lock);
-	lock_m.lock();
+	std::shared_lock lock(obj_mutex);
 	auto _task_id = task_id;
 	auto _delay_sec = delay_sec;
-	auto _progress = progress;
 	auto _status = status;
 	auto _time_started = time_started;
-	lock_m.unlock();
+	lock.unlock();
+	// TODO: just use assign or explicit load?
+	int _progress = progress.load();
+
 	std::string str_status;
 
 	int rest_time;
@@ -60,17 +62,19 @@ std::string Task_t::get_task_info() const
 			str_status = "in pause";
 			break;
 	}
-	std::string res = "Task #" + std::to_string(_task_id) + " ; staus: " + str_status + " ;progress " + std::to_string(_progress) + "\n";
+	std::string res = "Task #" + std::to_string(_task_id) + " ; staus: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
 	return res;
 }
 
-void Task_t::operator()() {
+void Task_t::operator()()
+{
 //    this->thread_operations();
-    thread_operations();
-    printf("a");
+	thread_operations();
+	printf("a");
 }
 
-void Task_t::run() {
+void Task_t::run()
+{
 //    this->thread_operations();
 //	std::thread t(&Task_t::thread_operations, this);
 //	cur_thread = std::move(t);

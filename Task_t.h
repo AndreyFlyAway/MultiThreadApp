@@ -18,6 +18,7 @@
 #include <memory>
 #include <time.h>
 #include <shared_mutex>
+#include <atomic>
 
 
 /* other */
@@ -47,14 +48,14 @@ class Task_t
 public:
 //    std::shared_ptr<std::mutex> obj_mutex;              // use to get save thread access to object data / используться для доступа к текущему объекту
 	// TODO: make some attributes atomic?
+	uint task_id;                      // is set by user / назначется вручную
 	time_t time_started;               // additng time of task время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
-    uint task_id;                      // is set by user / назначется вручную
     int delay_sec;                     // delay for starting of task / задержка запуска задачи
-    int progress ;                     // progress of task / прогресс задачи
+    std::atomic<int> progress;         // progress of task / прогресс задачи
     State status;                      // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
-    bool in_proccess;                  // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
+    std::atomic_flag in_proccess;      // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
     std::thread cur_thread;            // thread object for current task
-	mutable std::mutex obj_mutex;
+	mutable std::shared_mutex obj_mutex;
 //    int pause_flag (false);            // pause flag / флаг паузы потока, atomic флаг.
 
 public:
@@ -72,7 +73,7 @@ public:
 	 * @brief generating info about task
 	 * @return string info
 	 */
-	std::string get_task_info() const;
+	std::string task_info() const;
 
     // увидел такое использование в книге Уильямса "Параелельное программирование, эта перегруpзка
     // используеться для старта задачи, т.к. в std::thread можно передавать вызываемый объект
