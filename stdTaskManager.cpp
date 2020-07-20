@@ -53,17 +53,21 @@ int TaskPool::start_task(int delay)
 {
 	// TODO: make warning if amount of tasks is over hardware_concurrency - 1
 	static uint g_task_count = 1;
-	if (delay < 0)
+	int _delay = delay;
+	if (_delay < 0)
 	{
-		std::cout << "ERROR: delay cant be negative " << std::endl;
+		std::cout << "ERROR: delay cant be negative! Started without delay. " << std::endl;
+		_delay = 0;
 	}
 	int ret = 0;
 
-	auto task = std::make_shared<Task_t>(g_task_count, delay);
+	auto task = std::make_shared<Task_t>(g_task_count, _delay);
 	std::thread t(&TaskPool::thread_wrapper, this, task, g_task_count);
 	t.detach();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
+	lock.unlock();
+	std::cout << "Task #" << g_task_count << " started" << std::endl;
 	g_task_count++;
 	return ret;
 }

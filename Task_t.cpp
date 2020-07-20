@@ -16,6 +16,13 @@ Task_t::Task_t(uint id, int delay)
 
 void Task_t::thread_operations()
 {
+	// TODO: replcase for std::system_clock??
+	time(&(time_started));
+	if (delay_sec > 0)
+	{
+		std::chrono::seconds s(delay_sec);
+		std::this_thread::sleep_for(s);
+	}
 	obj_mutex.lock();
 	status = State::TASK_WORKS;
 	obj_mutex.unlock();
@@ -24,7 +31,6 @@ void Task_t::thread_operations()
 		progress += 3;
 		usleep(500000);
 	}
-//	std::cout << "Task #" << task_id << " ends works" << std::endl;
 
 	obj_mutex.lock();
 	status = State::TASK_END;
