@@ -31,8 +31,7 @@ void Task_t::thread_operations()
 		{
 			set_status(State::TASK_PAUSE);
 			std::unique_lock<std::mutex> lk(pause_mutex);
-			// TODO: figure out how to use pause_flag variable in this condition
-			resume_cond.wait(lk);
+			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
 			set_status(State::TASK_WORKS);
 		}
 		progress += 3;
