@@ -39,19 +39,33 @@ protected:
 	int stop_task(uint task_id);
 
 	/* @brief printing info about single task or all tasks / вывод информации об одной задаче
-	 * @param task_id task id or id task_id equals 0 than return info about all task
+	 * @param task_id task id or if task_id equals 0 than return info about all task
 	 * 		  id задачи или елси этот праметр равен 0, то выводится информация по всем параметрам
 	 * @return 0 if OK, -1 cant take info about task (there is no task with this task id in task pull)
 	 *         0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
 	 * */
 	int get_task_info(uint task_id);
 
+	/* @brief set task on pause
+	 * @param task_id task / id задачи
+	 * @return 0 if OK, -1 if task has pause status, -2 there are no task with this task id
+	 *         0 если все ок, -1 есди задача на уже паузе, , -2 если нет задачи с таким id
+	 * */
+	int pause_task(uint task_id);
+
+	/* @brief resume task from pause
+	 * @param task_id task / id задачи
+	 * @return 0 if OK, -1 if task doesn't have pause status, -2 there are no task with this task id
+	 *         0 если все ок, -1 есди задача на уже паузе, -2 если нет задачи с таким id
+	 * */
+	int resume_task(uint task_id);
+
 	/* @brief  command manager / обработчик консольных сообщений
 	 * @param task_id task id / id задачи
 	 * @return 0 if all is OK, 1 if command to exit with was executed, -1 if something bad happened
 	 *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
 	 * */
-	int task_mannger(const std::string cmd);
+	int task_manager(const std::string cmd);
 
 	/* @brief  function for wrapping task, this function delete task from task list when it ends
 	 *         his work

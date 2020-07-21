@@ -4,6 +4,8 @@
 
 #include "stdTaskManager.h"
 
+using Task_shr_p = std::shared_ptr<Task_t>;
+
 /* command constants*/
 static const std::string EXIT_CMD = "q";
 static const std::string START_TASK_CMD = "s";
@@ -70,7 +72,7 @@ int TaskPool::start_task(int delay)
 	return ret;
 }
 
-void TaskPool::thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id)
+void TaskPool::thread_wrapper(const Task_shr_p task, uint task_id)
 {
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
@@ -80,13 +82,13 @@ void TaskPool::thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id)
 int TaskPool::get_task_info(uint task_id)
 {
 	int res = 0;
-	std::shared_ptr<Task_t> task;
 	if (task_id > 0)
 	{
 		std::shared_lock lock(g_task_list_mutex);
-		if (g_task_list.find(task_id) != g_task_list.end())
+		auto it = g_task_list.find(task_id);
+		if (it!= g_task_list.end())
 		{
-			task = g_task_list[task_id];
+			Task_shr_p task = it->second;
 			std::cout << task->task_info() << std::endl;
 			res = 0;
 		}
@@ -103,7 +105,7 @@ int TaskPool::get_task_info(uint task_id)
 		{
 			for( auto const& [key, val] : g_task_list)
 			{
-				task = val;
+				Task_shr_p task = val;
 				std::cout << task->task_info() << std::endl;
 			}
 		}
@@ -116,14 +118,47 @@ int TaskPool::get_task_info(uint task_id)
 	return res;
 }
 
-int TaskPool::task_mannger(const std::string cmd)
+int TaskPool::pause_task(uint task_id)
+{
+	std::shared_lock lock(g_task_list_mutex);
+	auto it = g_task_list.find(task_id);
+	if (it != g_task_list.end())
+	{
+		auto task = it->second;
+		task->pause();
+	}
+	else
+	{
+		return -2;
+	}
+	return 0;
+}
+
+int TaskPool::resume_task(uint task_id)
+{
+	std::shared_lock lock(g_task_list_mutex);
+	auto it = g_task_list.find(task_id);
+	if (it != g_task_list.end())
+	{
+		auto task = it->second;
+		task->resume();
+	}
+	else
+	{
+		return -2;
+	}
+	return 0;
+}
+
+
+int TaskPool::task_manager(const std::string cmd)
 {
 	/* разделяю строку по словам */
 	std::stringstream ss(cmd);
 	std::istream_iterator<std::string> begin_s(ss);
 	std::istream_iterator<std::string> end_s;
 	std::vector<std::string> commands(begin_s, end_s);
-
+	// TODO: do something with this big monstrous code
 	if (commands.size() < 1)
 	{
 		print_help(WRONG_FMT);
@@ -136,7 +171,6 @@ int TaskPool::task_mannger(const std::string cmd)
 	}
 	else if (commands[0] == START_TASK_CMD) // старт задачи
 	{
-		// TODO: do something with this big monstrous code
 		if (commands.size() != 2)
 		{
 			print_help(WRONG_FMT);
@@ -173,11 +207,29 @@ int TaskPool::task_mannger(const std::string cmd)
 			get_task_info(id);
 		}
 	}
-	else if (commands[0] == PAUSE_TASK) // pause task / поставить задачу на паузу
+	else if (commands[0] == PAUSE_TASK) // pause_flag task / поставить задачу на паузу
 	{
+		if (commands.size() < 2)
+		{
+			print_help(WRONG_FMT);
+		}
+		else
+		if (is_number(commands[1]))
+		{
+			pause_task(stoi(commands[1]));
+		}
 	}
 	else if (commands[0] == CONTINUE_TASK) // continue task / снять задачу с паузы
 	{
+		if (commands.size() < 2)
+		{
+			print_help(WRONG_FMT);
+		}
+		else
+		if (is_number(commands[1]))
+		{
+			resume_task(stoi(commands[1]));
+		}
 	}
 	else
 	{
@@ -196,7 +248,7 @@ int TaskPool::std_multi_hread_main()
 	while (!exit_f) // TODO: ???
 	{
 		getline(std::cin, cmd);
-		if ((res=task_mannger(cmd)) == 1){
+		if ((res= task_manager(cmd)) == 1){
 			exit_f = true;
 			break;
 		}

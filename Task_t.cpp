@@ -6,7 +6,7 @@
 #include "Task_t.h"
 
 Task_t::Task_t(uint id, int delay):
-		pause(false),
+		pause_flag(false),
 		task_id(id),
 		delay_sec(delay),
 		progress(0),
@@ -24,24 +24,22 @@ void Task_t::thread_operations()
 		std::chrono::seconds s(delay_sec);
 		std::this_thread::sleep_for(s);
 	}
-	obj_mutex.lock();
-	status = State::TASK_WORKS;
-	obj_mutex.unlock();
+	set_status(State::TASK_WORKS);
 	for (int i = 0; i < 30 ; i++)
 	{
-		if (pause)
+		if (pause_flag)
 		{
+			set_status(State::TASK_PAUSE);
 			std::unique_lock<std::mutex> lk(pause_mutex);
-			// TODO: figure out how to use pause variable in this condition
+			// TODO: figure out how to use pause_flag variable in this condition
 			resume_cond.wait(lk);
+			set_status(State::TASK_WORKS);
 		}
 		progress += 3;
 		usleep(500000);
 	}
 
-	obj_mutex.lock();
-	status = State::TASK_END;
-	obj_mutex.unlock();
+	set_status(State::TASK_END);
 	progress = 100;
 }
 
@@ -79,16 +77,24 @@ std::string Task_t::task_info() const
 	return res;
 }
 
-int Task_t::pause_task()
+int Task_t::set_status(State st)
 {
-	pause = true;
+	std::unique_lock lk(obj_mutex);
+	status = st;
+	return 0;
 }
 
-
-int Task_t::resume_task()
+int Task_t::pause()
 {
-	pause = false;
+	pause_flag = true;
+	return 0;
+}
+
+int Task_t::resume()
+{
+	pause_flag = false;
 	resume_cond.notify_one();
+	return 0;
 }
 
 void Task_t::run()
