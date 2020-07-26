@@ -122,6 +122,8 @@ int TaskPool::task_manager(const std::string cmd)
 	{
 		if (cmd_type == START_TASK_CMD)
 			start_task(0);
+		else if (cmd_type == INFO_CMD)
+			get_all_task_info();
 		else if (cmd_type == EXIT_CMD)
 			return 1;
 		else
@@ -133,7 +135,10 @@ int TaskPool::task_manager(const std::string cmd)
 		if (is_number(commands[1]))
 			num_val = uint(std::stoi(commands[1]));
 		else
+		{
 			print_help(WRONG_FMT);
+			return 0;
+		}
 
 		if (cmd_type == START_TASK_CMD)
 			start_task(num_val);
