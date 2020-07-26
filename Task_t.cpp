@@ -26,7 +26,7 @@ void Task_t::thread_operations()
 		std::this_thread::sleep_for(s);
 	}
 	set_status(State::TASK_WORKS);
-	for (int i = 0; i < 30 ; i++)
+	for (int i = 0; i < 1000 ; i++)
 	{
 		if (pause_flag)
 		{
@@ -88,15 +88,34 @@ int Task_t::set_status(State st)
 
 int Task_t::pause()
 {
-	pause_flag = true;
-	return 0;
+	int ret = 0;
+	if (pause_flag == false)
+	{
+		pause_flag = true;
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+	return ret;
 }
 
 int Task_t::resume()
 {
-	pause_flag = false;
-	resume_cond.notify_one();
-	return 0;
+
+	int ret = 0;
+	if (pause_flag == true)
+	{
+		pause_flag = false;
+		resume_cond.notify_one();
+		ret = 0;
+	}
+	else
+	{
+		ret = 1;
+	}
+	return ret;
 }
 int Task_t::stop()
 {

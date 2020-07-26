@@ -14,12 +14,13 @@ static const std::string PAUSE_TASK = "p";
 static const std::string CONTINUE_TASK = "c";
 static const std::string STOP_TASK_CMD = "stop";
 
-/* look function print_help */
+/* see function print_help */
 static const int WRONG_FMT = 1;//
 static const int UNREC_CMD = 2;//
 
 /* @brief checking if word is a number / проверка являеться ли число строкой
-* @return boolean true/false / булево значение */
+ * @return boolean true/false / булево значение
+ */
 bool is_number(const std::string& s)
 {
 	std::string::const_iterator it = s.begin();
@@ -70,7 +71,6 @@ int TaskPool::start_task(int delay)
 	t.detach();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
-	lock.unlock();
 	std::cout << "Task #" << g_task_count << " started" << std::endl;
 	g_task_count++;
 	return ret;
@@ -178,6 +178,8 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		case OperationCode::STOP:
 		{
 			ret = task->stop();
+			if (ret == 0)
+				debug_info = "Task " + std::to_string(task_id) + " stopped ";
 			break;
 		}
 		case OperationCode::INFO:
@@ -188,11 +190,19 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		case OperationCode::PAUSE:
 		{
 			ret = task->pause();
+			if (ret == 0)
+				debug_info = "Task " + std::to_string(task_id) + " paused ";
+			else
+				debug_info = "Task " + std::to_string(task_id) + " not in pause";
 			break;
 		}
 		case OperationCode::CONTINUE:
 		{
 			ret = task->resume();
+			if (ret == 0)
+				debug_info = "Task " + std::to_string(task_id) + " resumed ";
+			else
+				debug_info = "Task " + std::to_string(task_id) + " is not on pause ";
 			break;
 		}
 	}
@@ -207,6 +217,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 
 int TaskPool::std_multi_thread_main()
 {
+	// TODO: fix this controversial function
 	int res;
 	std::string cmd;
 	bool exit_f = false;

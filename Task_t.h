@@ -92,7 +92,7 @@ public:
 
 	/*
 	 * @brief pause_flag task / поставить на паузу
-	 * @return 0 if OK, -1 if something bad happened
+	 * @return 0 if OK, 1 if paused already, -1 if something bad happened
 	 */
 	int pause();
 
