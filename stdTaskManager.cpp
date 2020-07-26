@@ -323,7 +323,7 @@ int TaskPool::std_multi_hread_main()
 	while (!exit_f) // TODO: ???
 	{
 		getline(std::cin, cmd);
-		if ((res= task_manager(cmd)) == 1){
+		if ((res = task_manager(cmd)) == 1){
 			exit_f = true;
 			break;
 		}
