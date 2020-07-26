@@ -54,11 +54,10 @@ private:
     std::atomic<int> progress;           // progress of task / прогресс задачи
     State status;                        // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause_flag / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
     std::atomic<bool> pause_flag;        // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
-    std::condition_variable resume_cond; // used to resume task if ir was set in pause_flag / используеться для снятия с паузы
 	mutable std::shared_mutex obj_mutex; // mutex for protecting data / мьютек для защиты данных
-	// TODO: not sure about this mutex
-	std::mutex pause_mutex;
-
+	std::condition_variable resume_cond; // used to resume task if ir was set in pause_flag / используеться для снятия с паузы
+	std::mutex pause_mutex;              // mutex that used in condition_variable
+	std::atomic<bool>  stop_flag;          // stop flag
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
     Task_t(uint id, int delay_sec);
@@ -103,4 +102,11 @@ public:
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int resume();
+
+
+	/*
+	 * @brief use to stop task / остановка задачи
+	 * @return 0 if OK, -1 if something bad happened
+	 */
+	int stop();
 };

@@ -7,6 +7,14 @@
 #include "Task_t.h"
 #include <shared_mutex>
 
+enum class OperationCode {
+	START,
+	STOP,
+	INFO,
+	PAUSE,
+	CONTINUE
+};
+
 class TaskPool
 {
 public:
@@ -66,6 +74,15 @@ protected:
 	 *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
 	 * */
 	int task_manager(const std::string cmd);
+
+
+	/* @brief  method where united operations for tasks / метод который объеденяет все операции нал задачми
+	 * @param task_id task id / id задачи
+	 * @param OperationCode operation code for task / код операции для задачи
+	 * @return 0 if all is OK, -1 f there is no task with this tasks ID, -2 if something bad happened
+	 *         0 если все ок, -1 нет задачи с таким task id, -2 если все плохо
+	 * */
+	int operation_manager(uint task_id, OperationCode op);
 
 	/* @brief  function for wrapping task, this function delete task from task list when it ends
 	 *         his work

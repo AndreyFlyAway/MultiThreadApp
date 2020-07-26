@@ -11,7 +11,8 @@ Task_t::Task_t(uint id, int delay):
 		delay_sec(delay),
 		progress(0),
 		status(State::TASK_WAITING),
-		time_started(0)
+		time_started(0),
+		stop_flag(false)
 {
 }
 
@@ -35,6 +36,8 @@ void Task_t::thread_operations()
 			resume_cond.wait(lk);
 			set_status(State::TASK_WORKS);
 		}
+		if (stop_flag)
+			return;
 		progress += 3;
 		usleep(500000);
 	}
@@ -94,6 +97,11 @@ int Task_t::resume()
 {
 	pause_flag = false;
 	resume_cond.notify_one();
+	return 0;
+}
+int Task_t::stop()
+{
+	stop_flag = true;
 	return 0;
 }
 

@@ -12,6 +12,7 @@ static const std::string START_TASK_CMD = "s";
 static const std::string INFO_CMD = "info";
 static const std::string PAUSE_TASK = "p";
 static const std::string CONTINUE_TASK = "c";
+static const std::string STOP_TASK_CMD = "stop";
 
 /* look function print_help */
 static const int WRONG_FMT = 1;//
@@ -42,6 +43,8 @@ void TaskPool::print_help(int wrong_fmt) const
 	std::cout << START_TASK_CMD << " now" << std::endl;
 	std::cout << "Start task command format with delay" << std::endl;
 	std::cout << START_TASK_CMD << " [time]" << std::endl;
+	std::cout << "Stop task command" << std::endl;
+	std::cout << STOP_TASK_CMD << " [task ID]" << std::endl;
 	std::cout << "Information about all tasks:" << std::endl;
 	std::cout << INFO_CMD << std::endl;
 	std::cout << "Information about all one task by ID:" << std::endl;
@@ -72,6 +75,22 @@ int TaskPool::start_task(int delay)
 	return ret;
 }
 
+int TaskPool::stop_task(uint task_id)
+{
+	std::shared_lock lock(g_task_list_mutex);
+	auto it = g_task_list.find(task_id);
+	if (it != g_task_list.end())
+	{
+		auto task = it->second;
+		task->stop();
+	}
+	else
+	{
+		return -2;
+	}
+	return 0;
+}
+
 void TaskPool::thread_wrapper(const Task_shr_p task, uint task_id)
 {
 	task->run();
@@ -88,7 +107,7 @@ int TaskPool::get_task_info(uint task_id)
 		auto it = g_task_list.find(task_id);
 		if (it!= g_task_list.end())
 		{
-			Task_shr_p task = it->second;
+			auto task = it->second;
 			std::cout << task->task_info() << std::endl;
 			res = 0;
 		}
@@ -204,7 +223,8 @@ int TaskPool::task_manager(const std::string cmd)
 		if (is_number(commands[1]))
 		{
 			uint id = uint(std::stoi(commands[1]));
-			get_task_info(id);
+//			get_task_info(id);
+			operation_manager(id, OperationCode::PAUSE);
 		}
 	}
 	else if (commands[0] == PAUSE_TASK) // pause_flag task / поставить задачу на паузу
@@ -228,7 +248,21 @@ int TaskPool::task_manager(const std::string cmd)
 		else
 		if (is_number(commands[1]))
 		{
-			resume_task(stoi(commands[1]));
+//			resume_task(stoi(commands[1]));
+			operation_manager(stoi(commands[1]), OperationCode::CONTINUE);
+		}
+	}
+	else if (commands[0] == STOP_TASK_CMD) // continue task / снять задачу с паузы
+	{
+		if (commands.size() < 2)
+		{
+			print_help(WRONG_FMT);
+		}
+		else
+		if (is_number(commands[1]))
+		{
+//			stop_task(stoi(commands[1]));
+			operation_manager(stoi(commands[1]), OperationCode::STOP);
 		}
 	}
 	else
@@ -236,6 +270,47 @@ int TaskPool::task_manager(const std::string cmd)
 		print_help(UNREC_CMD);
 	}
 	return 0;
+}
+
+int TaskPool::operation_manager(uint task_id, OperationCode op)
+{
+	int ret = 0;
+	std::shared_lock lock(g_task_list_mutex);
+	auto it = g_task_list.find(task_id);
+	if (it == g_task_list.end())
+	{
+		std::cout << "There are no task with this task id" << std::endl;
+		return -1;
+	}
+
+	auto task = it->second;
+
+	switch (op) {
+		case OperationCode::STOP:
+		{
+			ret = task->stop();
+			break;
+		}
+		case OperationCode::INFO:
+		{
+			std::cout << task->task_info() << std::endl;
+			break;
+		}
+		case OperationCode::PAUSE:
+		{
+			ret = task->pause();
+			break;
+		}
+		case OperationCode::CONTINUE:
+		{
+			ret = task->resume();
+			break;
+		}
+	}
+	// To free mutex as fast as it possible
+	task.reset();
+	lock.unlock();
+	return ret;
 }
 
 int TaskPool::std_multi_hread_main()
