@@ -50,6 +50,7 @@ void TaskPool::print_help(int wrong_fmt) const
 	std::cout << "Information about all one task by ID:" << std::endl;
 	std::cout << INFO_CMD << " [task ID]" << std::endl;
 	std::cout << "Enter " << EXIT_CMD << " to quit." << std::endl;
+	std::cout << std::endl;
 }
 
 int TaskPool::start_task(int delay)
@@ -79,43 +80,24 @@ void TaskPool::thread_wrapper(const Task_shr_p task, uint task_id)
 {
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
-	g_task_list.erase (task_id);
+	g_task_list.erase(task_id);
 }
 
-int TaskPool::get_task_info(uint task_id)
+int TaskPool::get_all_task_info()
 {
 	int res = 0;
-	if (task_id > 0)
+	std::shared_lock lock(g_task_list_mutex);
+	if (g_task_list.size())
 	{
-		std::shared_lock lock(g_task_list_mutex);
-		auto it = g_task_list.find(task_id);
-		if (it!= g_task_list.end())
+		for( auto const& [key, val] : g_task_list)
 		{
-			auto task = it->second;
+			Task_shr_p task = val;
 			std::cout << task->task_info() << std::endl;
-			res = 0;
-		}
-		else
-		{
-			std::cout << "There are no task with this task id" << std::endl;
-			res = -1;
 		}
 	}
 	else
 	{
-		std::shared_lock lock(g_task_list_mutex);
-		if (g_task_list.size())
-		{
-			for( auto const& [key, val] : g_task_list)
-			{
-				Task_shr_p task = val;
-				std::cout << task->task_info() << std::endl;
-			}
-		}
-		else
-		{
-			std::cout << "No active tasks in pull"<< std::endl;
-		}
+		std::cout << "No active tasks in pull"<< std::endl;
 	}
 
 	return res;
@@ -128,90 +110,43 @@ int TaskPool::task_manager(const std::string cmd)
 	std::istream_iterator<std::string> begin_s(ss);
 	std::istream_iterator<std::string> end_s;
 	std::vector<std::string> commands(begin_s, end_s);
-	// TODO: do something with this big monstrous code
-	if (commands.size() < 1)
+	if (commands.size() == 0)
 	{
 		print_help(WRONG_FMT);
 		return -1;
 	}
-	if (commands[0] == EXIT_CMD)
-	{
-		printf("End work bye!\n");
-		return 1;
-	}
-	else if (commands[0] == START_TASK_CMD) // старт задачи
-	{
-		if (commands.size() != 2)
-		{
-			print_help(WRONG_FMT);
-			return -2;
-		}
-		int delay = 0;
-		if (commands[1] == "now")
-		{
-			delay = 0;
-		}
-		else
-		{
-			if (is_number(commands[1]))
-				delay = stoi(commands[1]);
-			else
-			{
-				print_help(WRONG_FMT);
-				return -2;
-			}
-		}
 
-		int res = start_task(delay) ;
-	}
-	else if (commands[0] == INFO_CMD) // printing info about task / вызов информации о задаче
+	std::string cmd_type = commands[0];
+
+	if (commands.size() == 1)
 	{
-		if (commands.size() < 2)
-		{
-			get_task_info(0);
-		}
+		if (cmd_type == START_TASK_CMD)
+			start_task(0);
+		else if (cmd_type == EXIT_CMD)
+			return 1;
 		else
-		if (is_number(commands[1]))
-		{
-			uint id = uint(std::stoi(commands[1]));
-			operation_manager(id, OperationCode::PAUSE);
-		}
+			print_help(UNREC_CMD);
 	}
-	else if (commands[0] == PAUSE_TASK) // pause_flag task / поставить задачу на паузу
+	else if (commands.size() == 2)
 	{
-		if (commands.size() < 2)
-		{
+		uint num_val = 0;
+		if (is_number(commands[1]))
+			num_val = uint(std::stoi(commands[1]));
+		else
 			print_help(WRONG_FMT);
-		}
-		else
-		if (is_number(commands[1]))
-		{
-			operation_manager(stoi(commands[1]), OperationCode::PAUSE);
-		}
-	}
-	else if (commands[0] == CONTINUE_TASK) // continue task / снять задачу с паузы
-	{
-		if (commands.size() < 2)
-		{
-			print_help(WRONG_FMT);
-		}
-		else
-		if (is_number(commands[1]))
-		{
-			operation_manager(stoi(commands[1]), OperationCode::CONTINUE);
-		}
-	}
-	else if (commands[0] == STOP_TASK_CMD) // continue task / снять задачу с паузы
-	{
-		if (commands.size() < 2)
-		{
-			print_help(WRONG_FMT);
-		}
-		else
-		if (is_number(commands[1]))
-		{
+
+		if (cmd_type == START_TASK_CMD)
+			start_task(num_val);
+		else if (cmd_type == INFO_CMD)
+			operation_manager(num_val, OperationCode::INFO);
+		else if (cmd_type == PAUSE_TASK)
+			operation_manager(num_val, OperationCode::PAUSE);
+		else if (cmd_type == CONTINUE_TASK)
+			operation_manager(num_val, OperationCode::CONTINUE);
+		else if (cmd_type == STOP_TASK_CMD)
 			operation_manager(stoi(commands[1]), OperationCode::STOP);
-		}
+		else
+			print_help(UNREC_CMD);
 	}
 	else
 	{
@@ -265,7 +200,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 	return ret;
 }
 
-int TaskPool::std_multi_hread_main()
+int TaskPool::std_multi_thread_main()
 {
 	int res;
 	std::string cmd;

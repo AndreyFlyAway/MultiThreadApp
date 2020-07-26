@@ -3,6 +3,6 @@
 int main()
 {
 	TaskPool task_pool;
-	task_pool.std_multi_hread_main();
+	task_pool.std_multi_thread_main();
 	return 0;
 }

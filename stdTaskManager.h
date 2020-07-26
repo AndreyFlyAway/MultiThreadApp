@@ -19,7 +19,7 @@ class TaskPool
 {
 public:
 	/* @brief точка входа / entry point*/
-	int std_multi_hread_main();
+	int std_multi_thread_main();
 protected:
 	// global list with tasks
 	std::shared_mutex g_task_list_mutex;
@@ -46,13 +46,12 @@ protected:
 	* */
 	int stop_task(uint task_id);
 
-	/* @brief printing info about single task or all tasks / вывод информации об одной задаче
-	 * @param task_id task id or if task_id equals 0 than return info about all task
+	/* @brief printing info about  all tasks / вывод информации обо всех задача
 	 * 		  id задачи или елси этот праметр равен 0, то выводится информация по всем параметрам
-	 * @return 0 if OK, -1 cant take info about task (there is no task with this task id in task pull)
-	 *         0 если все ок, -1 если не удалось получит данные по задаче (задача не находится в пулле задач),
+	 * @return 0 if OK, -1 if something bad happen
+	 *         0 если все ок, -1 если что-то плохое произошло
 	 * */
-	int get_task_info(uint task_id);
+	int get_all_task_info();
 
 	/* @brief  command manager / обработчик консольных сообщений
 	 * @param task_id task id / id задачи
