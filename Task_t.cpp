@@ -101,6 +101,10 @@ int Task_t::resume()
 int Task_t::stop()
 {
 	stop_flag = true;
+	set_status(State::TASK_END);
+	// TODO: figure out do I need to use statement  (pause_flag == true) or I can use  (pause_flag) for atomic variable
+	if (pause_flag == true)
+		resume();
 	return 0;
 }
 

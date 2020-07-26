@@ -54,20 +54,6 @@ protected:
 	 * */
 	int get_task_info(uint task_id);
 
-	/* @brief set task on pause
-	 * @param task_id task / id задачи
-	 * @return 0 if OK, -1 if task has pause status, -2 there are no task with this task id
-	 *         0 если все ок, -1 есди задача на уже паузе, , -2 если нет задачи с таким id
-	 * */
-	int pause_task(uint task_id);
-
-	/* @brief resume task from pause
-	 * @param task_id task / id задачи
-	 * @return 0 if OK, -1 if task doesn't have pause status, -2 there are no task with this task id
-	 *         0 если все ок, -1 есди задача на уже паузе, -2 если нет задачи с таким id
-	 * */
-	int resume_task(uint task_id);
-
 	/* @brief  command manager / обработчик консольных сообщений
 	 * @param task_id task id / id задачи
 	 * @return 0 if all is OK, 1 if command to exit with was executed, -1 if something bad happened
@@ -75,10 +61,13 @@ protected:
 	 * */
 	int task_manager(const std::string cmd);
 
-
 	/* @brief  method where united operations for tasks / метод который объеденяет все операции нал задачми
 	 * @param task_id task id / id задачи
 	 * @param OperationCode operation code for task / код операции для задачи
+	 * 		  OperationCode::STOP - stop task / остановить задачу
+	 * 		  OperationCode::INFO - print info about task / вывести сообщение о задаче
+	 * 		  OperationCode::PAUSE - set task on pause / поставить задачу на паузу
+	 * 		  OperationCode::CONTINUE - continue task / продолжить задачу
 	 * @return 0 if all is OK, -1 f there is no task with this tasks ID, -2 if something bad happened
 	 *         0 если все ок, -1 нет задачи с таким task id, -2 если все плохо
 	 * */

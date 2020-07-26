@@ -75,22 +75,6 @@ int TaskPool::start_task(int delay)
 	return ret;
 }
 
-int TaskPool::stop_task(uint task_id)
-{
-	std::shared_lock lock(g_task_list_mutex);
-	auto it = g_task_list.find(task_id);
-	if (it != g_task_list.end())
-	{
-		auto task = it->second;
-		task->stop();
-	}
-	else
-	{
-		return -2;
-	}
-	return 0;
-}
-
 void TaskPool::thread_wrapper(const Task_shr_p task, uint task_id)
 {
 	task->run();
@@ -136,39 +120,6 @@ int TaskPool::get_task_info(uint task_id)
 
 	return res;
 }
-
-int TaskPool::pause_task(uint task_id)
-{
-	std::shared_lock lock(g_task_list_mutex);
-	auto it = g_task_list.find(task_id);
-	if (it != g_task_list.end())
-	{
-		auto task = it->second;
-		task->pause();
-	}
-	else
-	{
-		return -2;
-	}
-	return 0;
-}
-
-int TaskPool::resume_task(uint task_id)
-{
-	std::shared_lock lock(g_task_list_mutex);
-	auto it = g_task_list.find(task_id);
-	if (it != g_task_list.end())
-	{
-		auto task = it->second;
-		task->resume();
-	}
-	else
-	{
-		return -2;
-	}
-	return 0;
-}
-
 
 int TaskPool::task_manager(const std::string cmd)
 {
@@ -223,7 +174,6 @@ int TaskPool::task_manager(const std::string cmd)
 		if (is_number(commands[1]))
 		{
 			uint id = uint(std::stoi(commands[1]));
-//			get_task_info(id);
 			operation_manager(id, OperationCode::PAUSE);
 		}
 	}
@@ -236,7 +186,7 @@ int TaskPool::task_manager(const std::string cmd)
 		else
 		if (is_number(commands[1]))
 		{
-			pause_task(stoi(commands[1]));
+			operation_manager(stoi(commands[1]), OperationCode::PAUSE);
 		}
 	}
 	else if (commands[0] == CONTINUE_TASK) // continue task / снять задачу с паузы
@@ -248,7 +198,6 @@ int TaskPool::task_manager(const std::string cmd)
 		else
 		if (is_number(commands[1]))
 		{
-//			resume_task(stoi(commands[1]));
 			operation_manager(stoi(commands[1]), OperationCode::CONTINUE);
 		}
 	}
@@ -261,7 +210,6 @@ int TaskPool::task_manager(const std::string cmd)
 		else
 		if (is_number(commands[1]))
 		{
-//			stop_task(stoi(commands[1]));
 			operation_manager(stoi(commands[1]), OperationCode::STOP);
 		}
 	}
@@ -284,6 +232,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 	}
 
 	auto task = it->second;
+	std::string debug_info;
 
 	switch (op) {
 		case OperationCode::STOP:
@@ -293,7 +242,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		}
 		case OperationCode::INFO:
 		{
-			std::cout << task->task_info() << std::endl;
+			debug_info = task->task_info();
 			break;
 		}
 		case OperationCode::PAUSE:
@@ -310,6 +259,9 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 	// To free mutex as fast as it possible
 	task.reset();
 	lock.unlock();
+	if (debug_info.length())
+		std::cout << debug_info << std::endl;
+
 	return ret;
 }
 
