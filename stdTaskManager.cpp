@@ -4,7 +4,7 @@
 
 #include "stdTaskManager.h"
 
-using Task_shr_p = std::shared_ptr<Task_t>;
+using Task_shr_p = std::shared_ptr<TaskT>;
 
 /* command constants*/
 static const std::string EXIT_CMD = "q";
@@ -13,6 +13,10 @@ static const std::string INFO_CMD = "info";
 static const std::string PAUSE_TASK = "p";
 static const std::string CONTINUE_TASK = "c";
 static const std::string STOP_TASK_CMD = "stop";
+/* names of task types */
+static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
+
+
 
 /* see function print_help */
 static const int WRONG_FMT = 1;//
@@ -54,7 +58,7 @@ void TaskPool::print_help(int wrong_fmt) const
 	std::cout << std::endl;
 }
 
-int TaskPool::start_task(int delay)
+int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 {
 	// TODO: make warning if amount of tasks is over hardware_concurrency - 1
 	static uint g_task_count = 1;
@@ -66,7 +70,19 @@ int TaskPool::start_task(int delay)
 	}
 	int ret = 0;
 
-	auto task = std::make_shared<Task_t>(g_task_count, _delay);
+	std::shared_ptr<TaskT> task;
+	switch (type_of_prog) {
+		case TaskTypes::SIMPLE:
+			task = std::make_shared<TaskT>(g_task_count, _delay);
+			break;
+		case TaskTypes::ASYNC_PROGRS:
+			task = std::make_shared<TaskT>(g_task_count, _delay);
+			break;
+		default:
+			task = std::make_shared<TaskT>(g_task_count, _delay);
+			break;
+	}
+
 	std::thread t(&TaskPool::thread_wrapper, this, task, g_task_count);
 	t.detach();
 	std::unique_lock lock(g_task_list_mutex);
@@ -87,7 +103,7 @@ int TaskPool::get_all_task_info()
 {
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);
-	if (g_task_list.size())
+	if (!g_task_list.empty())
 	{
 		for( auto const& [key, val] : g_task_list)
 		{
@@ -133,25 +149,40 @@ int TaskPool::task_manager(const std::string cmd)
 	{
 		uint num_val = 0;
 		if (is_number(commands[1]))
+		{
 			num_val = uint(std::stoi(commands[1]));
+			if (cmd_type == START_TASK_CMD)
+				start_task(num_val);
+			else if (cmd_type == INFO_CMD)
+				operation_manager(num_val, OperationCode::INFO);
+			else if (cmd_type == PAUSE_TASK)
+				operation_manager(num_val, OperationCode::PAUSE);
+			else if (cmd_type == CONTINUE_TASK)
+				operation_manager(num_val, OperationCode::CONTINUE);
+			else if (cmd_type == STOP_TASK_CMD)
+				operation_manager(stoi(commands[1]), OperationCode::STOP);
+			else
+				print_help(UNREC_CMD);
+		}
 		else
 		{
 			print_help(WRONG_FMT);
 			return 0;
 		}
-
-		if (cmd_type == START_TASK_CMD)
-			start_task(num_val);
-		else if (cmd_type == INFO_CMD)
-			operation_manager(num_val, OperationCode::INFO);
-		else if (cmd_type == PAUSE_TASK)
-			operation_manager(num_val, OperationCode::PAUSE);
-		else if (cmd_type == CONTINUE_TASK)
-			operation_manager(num_val, OperationCode::CONTINUE);
-		else if (cmd_type == STOP_TASK_CMD)
-			operation_manager(stoi(commands[1]), OperationCode::STOP);
-		else
-			print_help(UNREC_CMD);
+	}
+	else if (commands.size() == 3)
+	{
+		// TODO: it's just for testing
+		if (commands[0] == START_TASK_CMD)
+		{
+			if (commands[1] == ASYN_PORGRESS_T_CMD)
+			{
+				uint num_val = 0;
+				if (is_number(commands[2]))
+					num_val = uint(std::stoi(commands[2]));
+				start_task(num_val, TaskTypes::ASYNC_PROGRS);
+			}
+		}
 	}
 	else
 	{

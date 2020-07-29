@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Task_t.h"
+#include "TaskT.h"
 #include <shared_mutex>
 
 enum class OperationCode {
@@ -15,6 +15,11 @@ enum class OperationCode {
 	CONTINUE
 };
 
+enum class TaskTypes {
+	SIMPLE,
+	ASYNC_PROGRS,
+};
+
 class TaskPool
 {
 public:
@@ -23,7 +28,7 @@ public:
 protected:
 	// global list with tasks
 	std::shared_mutex g_task_list_mutex;
-	std::map<uint, std::shared_ptr<Task_t>> g_task_list;
+	std::map<uint, std::shared_ptr<TaskT>> g_task_list;
 
 	/* @brief printing help /вывод справки об использовании
 	 * @param wrong_fmt add string "wrong format" if wrong_fmt == 1 /
@@ -34,10 +39,11 @@ protected:
 
 	/* @brief starting task / запуск задачи
 	 * @param delay delay start / задержка запуска
+	 * @param type_of_prog type of task / тип задачи
 	 * @return 0 if everything is OK, -1 cant start task
 	 *        0 если все ок, -1 если не удалось запустить задачу
 	* */
-	int start_task(int delay);
+	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::ASYNC_PROGRS);
 
 	/* @brief stop task / остановка задачи
 	 * @param task_id task id / id задачи
@@ -83,6 +89,5 @@ protected:
 	 *        использовать мьютекс
 	 * @return
 	 * */
-	void thread_wrapper(const std::shared_ptr<Task_t> task, uint task_id);
+	void thread_wrapper(const std::shared_ptr<TaskT> task, uint task_id);
 };
-

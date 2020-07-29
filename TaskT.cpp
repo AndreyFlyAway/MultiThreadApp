@@ -3,9 +3,10 @@
 //
 
 #include <string>
-#include "Task_t.h"
+#include <future>
+#include "TaskT.h"
 
-Task_t::Task_t(uint id, int delay):
+TaskT::TaskT(uint id, int delay):
 		pause_flag(false),
 		task_id(id),
 		delay_sec(delay),
@@ -16,16 +17,8 @@ Task_t::Task_t(uint id, int delay):
 {
 }
 
-void Task_t::thread_operations()
+void TaskT::thread_operations()
 {
-	// TODO: replcase for std::system_clock??
-	time(&(time_started));
-	if (delay_sec > 0)
-	{
-		std::chrono::seconds s(delay_sec);
-		std::this_thread::sleep_for(s);
-	}
-	set_status(State::TASK_WORKS);
 	for (int i = 0; i < 1000 ; i++)
 	{
 		if (pause_flag)
@@ -41,11 +34,10 @@ void Task_t::thread_operations()
 		usleep(500000);
 	}
 
-	set_status(State::TASK_END);
 	progress = 100;
 }
 
-std::string Task_t::task_info() const
+std::string TaskT::task_info() const
 {
 	// copy values then free lock
 	std::shared_lock lock(obj_mutex);
@@ -69,7 +61,7 @@ std::string Task_t::task_info() const
 		case State::TASK_WAITING:
 			time(&now);
 			rest_time = _delay_sec - (int)difftime(now, _time_started);
-			str_status = "in waiting (Time until start: " + std::to_string(rest_time) + " )" ;
+			str_status = "in waiting (Seconds until start: " + std::to_string(rest_time) + " )" ;
 			break;
 		case State::TASK_PAUSE:
 			str_status = "in pause";
@@ -79,14 +71,14 @@ std::string Task_t::task_info() const
 	return res;
 }
 
-int Task_t::set_status(State st)
+int TaskT::set_status(State st)
 {
 	std::unique_lock lk(obj_mutex);
 	status = st;
 	return 0;
 }
 
-int Task_t::pause()
+int TaskT::pause()
 {
 	int ret = 0;
 	if (pause_flag == false)
@@ -101,7 +93,7 @@ int Task_t::pause()
 	return ret;
 }
 
-int Task_t::resume()
+int TaskT::resume()
 {
 
 	int ret = 0;
@@ -117,7 +109,7 @@ int Task_t::resume()
 	}
 	return ret;
 }
-int Task_t::stop()
+int TaskT::stop()
 {
 	stop_flag = true;
 	set_status(State::TASK_END);
@@ -127,7 +119,56 @@ int Task_t::stop()
 	return 0;
 }
 
-void Task_t::run()
+void TaskT::run()
 {
+	// TODO: replace for std::system_clock??
+	time(&(time_started));
+	if (delay_sec > 0)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(delay_sec));
+	}
+	set_status(State::TASK_WORKS);
 	thread_operations();
+	set_status(State::TASK_END);
+}
+
+TaskAsyncProgress::TaskAsyncProgress(uint id, int delay):
+		TaskT(id, delay)
+{
+}
+
+void TaskAsyncProgress::thread_operations()
+{
+	std::future<int> progress_val = std::async(&TaskAsyncProgress::progress_value_async, this, 10);
+	for (int i = 0; i < 20 ; i++)
+	{
+		if (pause_flag)
+		{
+			set_status(State::TASK_PAUSE);
+			std::unique_lock<std::mutex> lk(pause_mutex);
+			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
+			set_status(State::TASK_WORKS);
+		}
+		if (stop_flag)
+			break;
+		usleep(500000);
+	}
+}
+
+int TaskAsyncProgress::progress_value_async(int sec_to_work)
+{
+	int ms_to_sleep = sec_to_work * 1000 / 99;
+	for (int i = 0 ; i < 99 ; i++)
+	{
+		if (pause_flag)
+		{
+			std::unique_lock<std::mutex> lk(pause_mutex);
+			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
+		}
+		if (stop_flag)
+			break;
+		progress += 1;
+		std::this_thread::sleep_for(std::chrono::milliseconds(ms_to_sleep));
+	}
+	return progress.load();
 }
