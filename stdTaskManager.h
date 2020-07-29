@@ -43,7 +43,7 @@ protected:
 	 * @return 0 if everything is OK, -1 cant start task
 	 *        0 если все ок, -1 если не удалось запустить задачу
 	* */
-	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::ASYNC_PROGRS);
+	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::SIMPLE);
 
 	/* @brief stop task / остановка задачи
 	 * @param task_id task id / id задачи

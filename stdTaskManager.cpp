@@ -224,7 +224,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 			if (ret == 0)
 				debug_info = "Task " + std::to_string(task_id) + " paused ";
 			else
-				debug_info = "Task " + std::to_string(task_id) + " not in pause";
+				debug_info = "Task " + std::to_string(task_id) + " on pause already";
 			break;
 		}
 		case OperationCode::CONTINUE:
