@@ -13,13 +13,14 @@ TaskT::TaskT(uint id, int delay):
 		progress(0),
 		status(State::TASK_WAITING),
 		time_started(0),
-		stop_flag(false)
+		stop_flag(false),
+		str_type("simple task")
 {
 }
 
 void TaskT::thread_operations()
 {
-	for (int i = 0; i < 1000 ; i++)
+	for (int i = 0; i < 10 ; i++)
 	{
 		if (pause_flag)
 		{
@@ -67,7 +68,8 @@ std::string TaskT::task_info() const
 			str_status = "in pause";
 			break;
 	}
-	std::string res = "Task #" + std::to_string(_task_id) + " ; staus: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
+	std::string res = "Task #" + std::to_string(_task_id) + " of type " + str_type +
+			"; staus: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
 	return res;
 }
 
@@ -135,6 +137,7 @@ void TaskT::run()
 TaskAsyncProgress::TaskAsyncProgress(uint id, int delay):
 		TaskT(id, delay)
 {
+	str_type = "with async progress";
 }
 
 void TaskAsyncProgress::thread_operations()
@@ -153,6 +156,7 @@ void TaskAsyncProgress::thread_operations()
 			break;
 		usleep(500000);
 	}
+	progress_val.wait();
 }
 
 int TaskAsyncProgress::progress_value_async(int sec_to_work)

@@ -76,7 +76,7 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 			task = std::make_shared<TaskT>(g_task_count, _delay);
 			break;
 		case TaskTypes::ASYNC_PROGRS:
-			task = std::make_shared<TaskT>(g_task_count, _delay);
+			task = std::make_shared<TaskAsyncProgress>(g_task_count, _delay);
 			break;
 		default:
 			task = std::make_shared<TaskT>(g_task_count, _delay);

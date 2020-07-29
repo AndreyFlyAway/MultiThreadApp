@@ -57,6 +57,7 @@ protected:
 	std::condition_variable_any resume_cond;  // used to resume task if it was set in pause_flag / используеться для снятия с паузы
 	std::mutex pause_mutex;                   // mutex that used in condition_variable
 	std::atomic<bool>  stop_flag;             // stop flag
+	std::string str_type;                     // string representation of type, some kind of small description
 
 protected:
 	/* @brief thread function / поточная функция
