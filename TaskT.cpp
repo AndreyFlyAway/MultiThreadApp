@@ -18,9 +18,17 @@ TaskT::TaskT(uint id, int delay):
 {
 }
 
+TaskT::~TaskT()
+{
+	// TODO: think more about it
+	stop();
+	if (cur_thread.joinable())
+		cur_thread.join();
+}
+
 void TaskT::thread_operations()
 {
-	for (int i = 0; i < 10 ; i++)
+	for (int i = 0; i < 1000 ; i++)
 	{
 		if (pause_flag)
 		{
@@ -75,9 +83,29 @@ std::string TaskT::task_info() const
 
 int TaskT::set_status(State st)
 {
-	std::unique_lock lk(obj_mutex);
+	std::unique_lock lock(obj_mutex);
 	status = st;
 	return 0;
+}
+
+void TaskT::thread_function(std::chrono::seconds time_tleep)
+{
+	// TODO: replace for std::system_clock??
+	time(&(time_started));
+	if (time_tleep != std::chrono::seconds::zero())
+	{
+		// no need to use status(State::TASK_WAITING), 'cause it's init value
+		std::this_thread::sleep_for(time_tleep);
+	}
+	set_status(State::TASK_WORKS);
+	thread_operations();
+	set_status(State::TASK_END);
+}
+
+State TaskT::get_status()
+{
+	std::shared_lock lock(obj_mutex);
+	return status;
 }
 
 int TaskT::pause()
@@ -123,15 +151,8 @@ int TaskT::stop()
 
 void TaskT::run()
 {
-	// TODO: replace for std::system_clock??
-	time(&(time_started));
-	if (delay_sec > 0)
-	{
-		std::this_thread::sleep_for(std::chrono::seconds(delay_sec));
-	}
-	set_status(State::TASK_WORKS);
-	thread_operations();
-	set_status(State::TASK_END);
+	std::chrono::seconds s(delay_sec);
+	cur_thread = std::move(std::thread(&TaskT::thread_function, this, s));
 }
 
 TaskAsyncProgress::TaskAsyncProgress(uint id, int delay):

@@ -24,11 +24,13 @@ class TaskPool
 {
 public:
 	/* @brief точка входа / entry point*/
+	TaskPool();
 	int std_multi_thread_main();
 protected:
 	// global list with tasks
 	std::shared_mutex g_task_list_mutex;
 	std::map<uint, std::shared_ptr<TaskT>> g_task_list;
+	bool exit_flag;
 
 	/* @brief printing help /вывод справки об использовании
 	 * @param wrong_fmt add string "wrong format" if wrong_fmt == 1 /
@@ -45,12 +47,11 @@ protected:
 	* */
 	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::SIMPLE);
 
-	/* @brief stop task / остановка задачи
+	/* @brief stop all tasks / остановить все задачи
 	 * @param task_id task id / id задачи
-	 * @return 0 if everything is OK, -1 cant stop task for some reason, -2 wrong task id
-	 *        0 если все ок, -1 если е удалось звершить задачу по какой-либо причине, -2 если неверный task id
+	 * @return 0 if everything is OK, -1 cant stop tasks for some reason
 	* */
-	int stop_task(uint task_id);
+	int stop_all();
 
 	/* @brief printing info about  all tasks / вывод информации обо всех задача
 	 * 		  id задачи или елси этот праметр равен 0, то выводится информация по всем параметрам
@@ -78,16 +79,20 @@ protected:
 	 * */
 	int operation_manager(uint task_id, OperationCode op);
 
-	/* @brief  function for wrapping task, this function delete task from task list when it ends
-	 *         his work
-	 *         функция для оберкти задачи, эта функция удаляет задачу из пула задача, когда та
-	 *         завершиь работу
-	 * @param task reference to task / ссылка на задачу
-	 * @param task_id just task id, this parameter is used to avoid getting this values from task - no need
-	 *        to use mutex
-	 *        просто id задачи, используеться для избежания получения этого значния из здачаи - не нужно
-	 *        использовать мьютекс
+	/* @brief remove tasks rom task list if there are end there work
 	 * @return
-	 * */
-	void thread_wrapper(const std::shared_ptr<TaskT> task, uint task_id);
+	 */
+	void clean_tasks_pool();
+
+private:
+
+	/* @brief checking if word is a number / проверка являеться ли число строкой
+ 	* @return boolean true/false / булево значение
+ 	*/
+	inline bool is_number(const std::string& s)
+	{
+		std::string::const_iterator it = s.begin();
+		while (it != s.end() && isdigit(*it)) ++it;
+		return !s.empty() && it == s.end();
+	}
 };

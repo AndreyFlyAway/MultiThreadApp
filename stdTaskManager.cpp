@@ -17,20 +17,9 @@ static const std::string STOP_TASK_CMD = "stop";
 static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
 
 
-
-/* see function print_help */
-static const int WRONG_FMT = 1;//
-static const int UNREC_CMD = 2;//
-
-/* @brief checking if word is a number / проверка являеться ли число строкой
- * @return boolean true/false / булево значение
- */
-bool is_number(const std::string& s)
-{
-	std::string::const_iterator it = s.begin();
-	while (it != s.end() && isdigit(*it)) ++it;
-	return !s.empty() && it == s.end();
-}
+/* look function print_help */
+static const int WRONG_FMT = 1;
+static const int UNREC_CMD = 2;
 
 void TaskPool::print_help(int wrong_fmt) const
 {
@@ -83,8 +72,7 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 			break;
 	}
 
-	std::thread t(&TaskPool::thread_wrapper, this, task, g_task_count);
-	t.detach();
+	task->run();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
 	std::cout << "Task #" << g_task_count << " started" << std::endl;
@@ -92,35 +80,45 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 	return ret;
 }
 
-void TaskPool::thread_wrapper(const Task_shr_p task, uint task_id)
+int TaskPool::stop_all()
 {
-	task->run();
 	std::unique_lock lock(g_task_list_mutex);
-	g_task_list.erase(task_id);
+	for(auto it: g_task_list)
+	{
+		Task_shr_p t = it.second;
+		t->stop();
+	}
+	return 0;
 }
 
 int TaskPool::get_all_task_info()
 {
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);
+	std::string asnwer;
 	if (!g_task_list.empty())
 	{
 		for( auto const& [key, val] : g_task_list)
 		{
 			Task_shr_p task = val;
-			std::cout << task->task_info() << std::endl;
+			asnwer += task->task_info();
 		}
+
 	}
 	else
 	{
-		std::cout << "No active tasks in pull"<< std::endl;
+		asnwer = "No active tasks in pull";
 	}
+	lock.unlock();
+
+	std::cout << asnwer << std::endl;
 
 	return res;
 }
 
 int TaskPool::task_manager(const std::string cmd)
 {
+	clean_tasks_pool();
 	/* разделяю строку по словам */
 	std::stringstream ss(cmd);
 	std::istream_iterator<std::string> begin_s(ss);
@@ -141,7 +139,11 @@ int TaskPool::task_manager(const std::string cmd)
 		else if (cmd_type == INFO_CMD)
 			get_all_task_info();
 		else if (cmd_type == EXIT_CMD)
+		{
+			stop_all();
+			clean_tasks_pool();
 			return 1;
+		}
 		else
 			print_help(UNREC_CMD);
 	}
@@ -166,7 +168,15 @@ int TaskPool::task_manager(const std::string cmd)
 		}
 		else
 		{
-			print_help(WRONG_FMT);
+			if (cmd_type == START_TASK_CMD)
+			{
+				if (commands[1] == ASYN_PORGRESS_T_CMD)
+					start_task(num_val, TaskTypes::ASYNC_PROGRS);
+				else
+					print_help(UNREC_CMD);
+			}
+			else
+				print_help(UNREC_CMD);
 			return 0;
 		}
 	}
@@ -202,7 +212,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		return -1;
 	}
 
-	auto task = it->second;
+	Task_shr_p task = it->second;
 	std::string debug_info;
 
 	switch (op) {
@@ -246,21 +256,39 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 	return ret;
 }
 
-int TaskPool::std_multi_thread_main()
+void TaskPool::clean_tasks_pool()
 {
-	// TODO: fix this controversial function
-	int res;
-	std::string cmd;
-	bool exit_f = false;
-	pthread_t mange_cmd;
-	print_help();
-	while (!exit_f) // TODO: ???
+	// TODO: optimize?
+	std::unique_lock lock(g_task_list_mutex);
+	std::vector<int> id_to_delete;
+	for(const auto& it : g_task_list)
 	{
-		getline(std::cin, cmd);
-		if ((res = task_manager(cmd)) == 1){
-			exit_f = true;
-			break;
+		Task_shr_p t = it.second;
+		if (t->get_status() == State::TASK_END)
+		{
+			id_to_delete.push_back(it.first);
+			t->cur_thread.join();
 		}
 	}
-	return res;
+	for(int i: id_to_delete)
+		g_task_list.erase(i);
+}
+
+TaskPool::TaskPool():
+	exit_flag(false)
+{
+}
+
+int TaskPool::std_multi_thread_main()
+{
+	std::string cmd;
+	print_help();
+	while (!exit_flag)
+	{
+		getline(std::cin, cmd);
+		if (task_manager(cmd) == 1){
+			exit_flag = true;
+		}
+	}
+	return 0;
 }

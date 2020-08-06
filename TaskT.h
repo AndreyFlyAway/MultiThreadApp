@@ -45,6 +45,8 @@ enum class State {
  */
 class TaskT
 {
+public:
+	std::thread cur_thread;                    // thread object
 protected:
 	// TODO: make some attributes atomic?
 	uint task_id;                             // is set by user / назначется вручную
@@ -65,44 +67,54 @@ protected:
 	 */
 	virtual void thread_operations();
 
-	/*
-	 * @brief set status of task /  установить статус задачи
+	/* @brief set status of task /  установить статус задачи
 	 * @param st status value / значение статауса
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int set_status(State st);
+
+	/* @brief thread function / потоковая функция
+	 * @param time to sleep until start thread work / время, которое будет выжидаться, пока начнеться основная работа потока
+	 * @return
+	 */
+	void thread_function(std::chrono::seconds time_tleep);
+
+
 
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
     TaskT(uint id, int delay_sec);
 	TaskT(const TaskT &t) = delete;
 	TaskT & operator=(const TaskT&) = delete;
-
-
-    // running thread / запуск задачи
+	// TODO: make move constructors
+	~TaskT();
+	/* @brief running thread / запуск задачи
+	 * @return string info
+	 */
 	void run();
 
-	/*
-	 * @brief generating info about task
+	/* @brief generating info about task
 	 * @return string info
 	 */
 	std::string task_info() const;
 
-	/*
-	 * @brief pause_flag task / поставить на паузу
+
+	/* @brief task status /  статус задачи
+	 * @return 0 if OK, -1 if something bad happened
+	 */
+	State get_status();
+
+	/* @brief pause_flag task / поставить на паузу
 	 * @return 0 if OK, 1 if paused already, -1 if something bad happened
 	 */
 	int pause();
 
-	/*
-	 * @brief resume task /  возобновить задачу
+	/* @brief resume task /  возобновить задачу
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int resume();
 
-
-	/*
-	 * @brief use to stop task / остановка задачи
+	/* @brief use to stop task / остановка задачи
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int stop();
