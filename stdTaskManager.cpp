@@ -83,7 +83,7 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 int TaskPool::stop_all()
 {
 	std::unique_lock lock(g_task_list_mutex);
-	for(auto it: g_task_list)
+	for(const auto& it: g_task_list)
 	{
 		Task_shr_p t = it.second;
 		t->stop();
@@ -103,7 +103,6 @@ int TaskPool::get_all_task_info()
 			Task_shr_p task = val;
 			asnwer += task->task_info();
 		}
-
 	}
 	else
 	{
@@ -116,7 +115,7 @@ int TaskPool::get_all_task_info()
 	return res;
 }
 
-int TaskPool::task_manager(const std::string cmd)
+int TaskPool::task_manager(const std::string& cmd)
 {
 	clean_tasks_pool();
 	/* разделяю строку по словам */
@@ -182,7 +181,6 @@ int TaskPool::task_manager(const std::string cmd)
 	}
 	else if (commands.size() == 3)
 	{
-		// TODO: it's just for testing
 		if (commands[0] == START_TASK_CMD)
 		{
 			if (commands[1] == ASYN_PORGRESS_T_CMD)

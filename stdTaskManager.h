@@ -8,7 +8,6 @@
 #include <shared_mutex>
 
 enum class OperationCode {
-	START,
 	STOP,
 	INFO,
 	PAUSE,
@@ -65,7 +64,7 @@ protected:
 	 * @return 0 if all is OK, 1 if command to exit with was executed, -1 if something bad happened
 	 *         0 если все ок, 1 если пришла команда завершения, -1 если все плохо
 	 * */
-	int task_manager(const std::string cmd);
+	int task_manager(const std::string& cmd);
 
 	/* @brief  method where united operations for tasks / метод который объеденяет все операции нал задачми
 	 * @param task_id task id / id задачи

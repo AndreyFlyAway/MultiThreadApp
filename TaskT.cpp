@@ -75,6 +75,9 @@ std::string TaskT::task_info() const
 		case State::TASK_PAUSE:
 			str_status = "in pause";
 			break;
+		case State::TASK_END:
+			str_status = "ending";
+			break;
 	}
 	std::string res = "Task #" + std::to_string(_task_id) + " of type " + str_type +
 			"; staus: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
