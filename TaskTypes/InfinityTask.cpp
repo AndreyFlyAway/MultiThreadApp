@@ -15,6 +15,7 @@ void InfinityTask::thread_operations()
 {
 	static double v = 0.0;
 	static double pi = 3.14159265;
+	auto f = []{v += 0.1; return cos ( v * pi / 180.0 );};
 	while (!stop_flag.load())
 	{
 		if (pause_flag)
@@ -24,8 +25,7 @@ void InfinityTask::thread_operations()
 			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
 			set_status(State::TASK_WORKS);
 		}
-		cos ( v * pi / 180.0 );
-		v += 0.1;
+		f();
 		progress += 1;
 		// add it to not allow thread to take too much of process time
 		usleep(10000);

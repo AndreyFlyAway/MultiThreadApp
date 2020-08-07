@@ -93,16 +93,22 @@ int TaskT::set_status(State st)
 
 void TaskT::thread_function(std::chrono::seconds time_tleep)
 {
-	// TODO: replace for std::system_clock??
-	time(&(time_started));
-	if (time_tleep != std::chrono::seconds::zero())
-	{
-		// no need to use status(State::TASK_WAITING), 'cause it's init value
-		std::this_thread::sleep_for(time_tleep);
+	try {
+		// TODO: replace for std::system_clock??
+		time(&(time_started));
+		if (time_tleep != std::chrono::seconds::zero())
+		{
+			// no need to use status(State::TASK_WAITING), 'cause it's init value
+			std::this_thread::sleep_for(time_tleep);
+		}
+		set_status(State::TASK_WORKS);
+		thread_operations();
+		set_status(State::TASK_END);
 	}
-	set_status(State::TASK_WORKS);
-	thread_operations();
-	set_status(State::TASK_END);
+	catch (const std::exception & e)
+	{
+		std::cout << "In task #" << task_id << " cause some exception: " + std::string(e.what()) << std::endl;
+	}
 }
 
 State TaskT::get_status()

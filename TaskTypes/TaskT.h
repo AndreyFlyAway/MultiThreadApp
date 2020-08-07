@@ -18,13 +18,6 @@
 
 
 /* other */
-/* статусы для задач  */
-// TODO: сделать через enum
-const int TASK_WORKS = 1;
-const int TASK_WAITING = 2;
-const int TASK_PAUSE = 3;
-const int TASK_END = 4;
-
 enum class State {
 	TASK_WORKS,
 	TASK_WAITING,

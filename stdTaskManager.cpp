@@ -2,6 +2,7 @@
 // Created by user on 22.04.20.
 //
 
+#include <cstdarg>
 #include "stdTaskManager.h"
 
 using Task_shr_p = std::shared_ptr<TaskT>;
@@ -65,7 +66,7 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 	}
 	int ret = 0;
 
-	std::shared_ptr<TaskT> task;
+	Task_shr_p task;
 	switch (type_of_prog) {
 		case TaskTypes::SIMPLE:
 			task = std::make_shared<TaskT>(g_task_count, _delay);
@@ -130,6 +131,7 @@ int TaskPool::get_all_task_info()
 	return res;
 }
 
+
 int TaskPool::task_manager(const std::string& cmd)
 {
 	clean_tasks_pool();
@@ -138,13 +140,12 @@ int TaskPool::task_manager(const std::string& cmd)
 	std::istream_iterator<std::string> begin_s(ss);
 	std::istream_iterator<std::string> end_s;
 	std::vector<std::string> commands(begin_s, end_s);
+	std::string cmd_type = commands[0];
 	if (commands.size() == 0)
 	{
 		print_help(WRONG_FMT);
 		return -1;
 	}
-
-	std::string cmd_type = commands[0];
 
 	if (commands.size() == 1)
 	{
