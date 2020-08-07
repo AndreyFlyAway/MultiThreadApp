@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include "TaskT.h"
 #include <shared_mutex>
+#include "TaskTypes/TaskT.h"
+#include "TaskTypes/InfinityTask.h"
 
 enum class OperationCode {
 	STOP,
@@ -17,6 +18,7 @@ enum class OperationCode {
 enum class TaskTypes {
 	SIMPLE,
 	ASYNC_PROGRS,
+	INFINITY
 };
 
 class TaskPool
@@ -24,7 +26,7 @@ class TaskPool
 public:
 	/* @brief точка входа / entry point*/
 	TaskPool();
-	int std_multi_thread_main();
+	int main_loop();
 protected:
 	// global list with tasks
 	std::shared_mutex g_task_list_mutex;
@@ -88,7 +90,7 @@ private:
 	/* @brief checking if word is a number / проверка являеться ли число строкой
  	* @return boolean true/false / булево значение
  	*/
-	inline bool is_number(const std::string& s)
+	inline bool is_number(const std::string& s) const
 	{
 		std::string::const_iterator it = s.begin();
 		while (it != s.end() && isdigit(*it)) ++it;

@@ -28,7 +28,7 @@ TaskT::~TaskT()
 
 void TaskT::thread_operations()
 {
-	for (int i = 0; i < 1000 ; i++)
+	for (int i = 0; i < 30 ; i++)
 	{
 		if (pause_flag)
 		{

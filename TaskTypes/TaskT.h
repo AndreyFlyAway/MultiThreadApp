@@ -1,7 +1,3 @@
-//
-// Created by user on 22.04.20.
-//
-
 #pragma once
 
 #include <iostream>
@@ -38,10 +34,10 @@ enum class State {
 
 
 /*
- * Class describes object, that works in due std::thread, most of operations that made by functions
- * in MultiThread.cpp will be made as method in class.
- * Класс описывает объект, который будет при помощи std::thread, болшая часть операций, которые реализованы
- * в MultiThread.cpp через функции планируються быть реализованы через методы класса.
+ * Class represent work of thread that can be stopped, set on pause, requested information about current progress,.
+ * Also it's base class for other tasks.
+ * Класс предоставляет работу потока, который модет быть остановлен, поставлена на паузу, у него может быть запрошена
+ * информация от текущем результате. Так же класс являеться базовым для всех остальных типов задач
  */
 class TaskT
 {

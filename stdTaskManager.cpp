@@ -7,14 +7,16 @@
 using Task_shr_p = std::shared_ptr<TaskT>;
 
 /* command constants*/
-static const std::string EXIT_CMD = "q";
-static const std::string START_TASK_CMD = "s";
+static const std::string EXIT_CMD = "quit";
+static const std::string START_TASK_CMD = "start";
 static const std::string INFO_CMD = "info";
-static const std::string PAUSE_TASK = "p";
-static const std::string CONTINUE_TASK = "c";
+static const std::string PAUSE_TASK_CMD = "pause";
+static const std::string CONTINUE_TASK_CMD = "resume";
 static const std::string STOP_TASK_CMD = "stop";
+static const std::string TEST_THREADS_CMD = "start_1000";
 /* names of task types */
 static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
+static const std::string INF_T_CMD = "inf";
 
 
 /* look function print_help */
@@ -33,18 +35,22 @@ void TaskPool::print_help(int wrong_fmt) const
 			break;
 	}
 
-	std::cout << "Start task command format without delay:" << std::endl;
-	std::cout << START_TASK_CMD << " now" << std::endl;
-	std::cout << "Start task command format with delay" << std::endl;
-	std::cout << START_TASK_CMD << " [time]" << std::endl;
-	std::cout << "Stop task command" << std::endl;
-	std::cout << STOP_TASK_CMD << " [task ID]" << std::endl;
-	std::cout << "Information about all tasks:" << std::endl;
-	std::cout << INFO_CMD << std::endl;
-	std::cout << "Information about all one task by ID:" << std::endl;
-	std::cout << INFO_CMD << " [task ID]" << std::endl;
-	std::cout << "Enter " << EXIT_CMD << " to quit." << std::endl;
-	std::cout << std::endl;
+	const char common_format[] = "\t%-25s\t%s\n";
+	printf( "Commands:\n");
+	printf(common_format, START_TASK_CMD.c_str(),  "Start without delay. By default simple task will be created." );
+	printf(common_format, (START_TASK_CMD + " [time]").c_str(),  "Start task with delay in seconds." );
+	printf(common_format, (START_TASK_CMD + " " + ASYN_PORGRESS_T_CMD + " [time]").c_str(),  "Start task with asynchronous increasing of progress. Can be started with delay or not" );
+	printf(common_format, (START_TASK_CMD + " " + INF_T_CMD + " [time]").c_str(),  "Start infinity task." );
+	printf(common_format, (STOP_TASK_CMD + " [task ID]" ).c_str(),  "Stop task by ID." );
+	printf(common_format, (PAUSE_TASK_CMD + " [task ID]" ).c_str(),  "Set task on pause." );
+	printf(common_format, (CONTINUE_TASK_CMD + " [task ID]" ).c_str(),  "Resume task." );
+	printf(common_format, (INFO_CMD + " [task ID]" ).c_str(),  "Information about one task by ID" );
+#ifdef TEST_MODE
+	printf(common_format, TEST_THREADS_CMD.c_str(),  "Start 1000 threads." );
+#endif
+	printf(common_format, INFO_CMD.c_str(),  "Information about all tasks." );
+	printf(common_format, EXIT_CMD.c_str(),  "Stop all tasks and exit" );
+	printf("\n" );
 }
 
 int TaskPool::start_task(int delay, TaskTypes type_of_prog)
@@ -67,6 +73,9 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 		case TaskTypes::ASYNC_PROGRS:
 			task = std::make_shared<TaskAsyncProgress>(g_task_count, _delay);
 			break;
+		case TaskTypes::INFINITY:
+			task = std::make_shared<InfinityTask>(g_task_count, _delay);
+			break;
 		default:
 			task = std::make_shared<TaskT>(g_task_count, _delay);
 			break;
@@ -75,7 +84,7 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
-	std::cout << "Task #" << g_task_count << " started" << std::endl;
+	std::cout << "Task #" << g_task_count << " started." << std::endl;
 	g_task_count++;
 	return ret;
 }
@@ -83,10 +92,16 @@ int TaskPool::start_task(int delay, TaskTypes type_of_prog)
 int TaskPool::stop_all()
 {
 	std::unique_lock lock(g_task_list_mutex);
+	// not in one cycle 'cause stopping task some time
 	for(const auto& it: g_task_list)
 	{
 		Task_shr_p t = it.second;
 		t->stop();
+	}
+	for(const auto& it: g_task_list)
+	{
+		Task_shr_p t = it.second;
+		t->cur_thread.join();
 	}
 	return 0;
 }
@@ -137,13 +152,20 @@ int TaskPool::task_manager(const std::string& cmd)
 			start_task(0);
 		else if (cmd_type == INFO_CMD)
 			get_all_task_info();
+#ifdef TEST_MODE
+		else if (cmd_type == TEST_THREADS_CMD)
+		{
+			for(int i = 0 ; i < 1000 ; i++)
+				start_task(0);
+		}
+#endif
 		else if (cmd_type == EXIT_CMD)
 		{
 			stop_all();
-			clean_tasks_pool();
 			return 1;
 		}
 		else
+			// TODO: make it due process exception
 			print_help(UNREC_CMD);
 	}
 	else if (commands.size() == 2)
@@ -156,9 +178,9 @@ int TaskPool::task_manager(const std::string& cmd)
 				start_task(num_val);
 			else if (cmd_type == INFO_CMD)
 				operation_manager(num_val, OperationCode::INFO);
-			else if (cmd_type == PAUSE_TASK)
+			else if (cmd_type == PAUSE_TASK_CMD)
 				operation_manager(num_val, OperationCode::PAUSE);
-			else if (cmd_type == CONTINUE_TASK)
+			else if (cmd_type == CONTINUE_TASK_CMD)
 				operation_manager(num_val, OperationCode::CONTINUE);
 			else if (cmd_type == STOP_TASK_CMD)
 				operation_manager(stoi(commands[1]), OperationCode::STOP);
@@ -171,6 +193,8 @@ int TaskPool::task_manager(const std::string& cmd)
 			{
 				if (commands[1] == ASYN_PORGRESS_T_CMD)
 					start_task(num_val, TaskTypes::ASYNC_PROGRS);
+				else if (commands[1] == INF_T_CMD)
+					start_task(num_val, TaskTypes::INFINITY);
 				else
 					print_help(UNREC_CMD);
 			}
@@ -277,7 +301,7 @@ TaskPool::TaskPool():
 {
 }
 
-int TaskPool::std_multi_thread_main()
+int TaskPool::main_loop()
 {
 	std::string cmd;
 	print_help();
