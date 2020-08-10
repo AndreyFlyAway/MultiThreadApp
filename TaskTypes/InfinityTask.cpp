@@ -1,9 +1,8 @@
-//
-// Created by yanikeev-as on 07.08.2020.
-//
-
 #include <cmath>
 #include "InfinityTask.h"
+#include <chrono>
+
+using namespace std::chrono_literals;
 
 InfinityTask::InfinityTask(uint id, int delay):
 		TaskT(id, delay)
@@ -28,6 +27,6 @@ void InfinityTask::thread_operations()
 		f();
 		progress += 1;
 		// add it to not allow thread to take too much of process time
-		usleep(10000);
+		std::this_thread::sleep_for(500ms);
 	}
 }

@@ -1,10 +1,10 @@
-//
-// Created by user on 22.04.20.
-//
-
 #include <string>
 #include <future>
 #include "TaskT.h"
+#include <chrono>
+
+using namespace std::chrono_literals;
+
 
 TaskT::TaskT(uint id, int delay):
 		pause_flag(false),
@@ -30,6 +30,8 @@ void TaskT::thread_operations()
 {
 	for (int i = 0; i < 30 ; i++)
 	{
+		if (stop_flag)
+			return;
 		if (pause_flag)
 		{
 			set_status(State::TASK_PAUSE);
@@ -37,10 +39,12 @@ void TaskT::thread_operations()
 			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
 			set_status(State::TASK_WORKS);
 		}
+
+		progress += 3;
+
 		if (stop_flag)
 			return;
-		progress += 3;
-		usleep(500000);
+		std::this_thread::sleep_for(500ms);
 	}
 
 	progress = 100;
@@ -184,7 +188,7 @@ void TaskAsyncProgress::thread_operations()
 		}
 		if (stop_flag)
 			break;
-		usleep(500000);
+		std::this_thread::sleep_for(500ms);
 	}
 	progress_val.wait();
 }

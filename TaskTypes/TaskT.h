@@ -16,15 +16,12 @@
 #include <shared_mutex>
 #include <atomic>
 
-
-/* other */
 enum class State {
 	TASK_WORKS,
 	TASK_WAITING,
 	TASK_PAUSE,
 	TASK_END
 };
-
 
 /*
  * Class represent work of thread that can be stopped, set on pause, requested information about current progress,.
@@ -34,9 +31,8 @@ enum class State {
  */
 class TaskT
 {
-public:
-	std::thread cur_thread;                    // thread object
 protected:
+	std::thread cur_thread;                    // thread object
 	// TODO: make some attributes atomic?
 	uint task_id;                             // is set by user / назначется вручную
 	time_t time_started;                      // time when task was started / время добавления задачи чтобы, отсчитывать и выводить время, через которое очнеться задача
@@ -67,8 +63,6 @@ protected:
 	 * @return
 	 */
 	void thread_function(std::chrono::seconds time_tleep);
-
-
 
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly
@@ -107,6 +101,8 @@ public:
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int stop();
+
+	friend class TaskPool;
 };
 
 /* @brief  class where overloaded method thread_operations, in this method progress increasing made
