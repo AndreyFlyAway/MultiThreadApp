@@ -161,7 +161,7 @@ int TaskT::stop()
 void TaskT::run()
 {
 	std::chrono::seconds s(delay_sec);
-	cur_thread = std::move(std::thread(&TaskT::thread_function, this, s));
+	cur_thread = std::thread(&TaskT::thread_function, this, s);
 }
 
 TaskAsyncProgress::TaskAsyncProgress(uint id, int delay):
