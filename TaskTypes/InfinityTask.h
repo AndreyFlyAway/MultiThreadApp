@@ -10,7 +10,7 @@ class InfinityTask : public TaskT {
 public:
 	InfinityTask(uint id, int delay);
 private:
-	void thread_operations();
+	void thread_operations() override;
 };
 
 

@@ -115,7 +115,7 @@ void TaskT::thread_function(std::chrono::seconds time_tleep)
 	}
 }
 
-State TaskT::get_status()
+State TaskT::get_status() const
 {
 	std::shared_lock lock(obj_mutex);
 	return status;

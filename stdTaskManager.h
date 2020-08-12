@@ -29,7 +29,7 @@ public:
 	int main_loop();
 protected:
 	// global list with tasks
-	std::shared_mutex g_task_list_mutex;
+	mutable std::shared_mutex g_task_list_mutex;
 	std::map<uint, std::shared_ptr<TaskT>> g_task_list;
 	bool exit_flag;
 
@@ -37,7 +37,8 @@ protected:
 	 * @param wrong_fmt add string "wrong format" if wrong_fmt == 1 /
 	 *                  добавить сообщение "неверный формат" если установлено значение 1
 	 * @param wrong_fmt: used if with simple help need print "Wrong command format!"
-	 *                   используеться, если нужно вывести Wrong command format!"*/
+	 *                   используеться, если нужно вывести Wrong command format!"
+	 */
 	void print_help(int wrong_fmt=0) const;
 
 	/* @brief starting task / запуск задачи
@@ -45,13 +46,13 @@ protected:
 	 * @param type_of_prog type of task / тип задачи
 	 * @return 0 if everything is OK, -1 cant start task
 	 *        0 если все ок, -1 если не удалось запустить задачу
-	* */
+	 */
 	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::SIMPLE);
 
 	/* @brief stop all tasks / остановить все задачи
 	 * @param task_id task id / id задачи
 	 * @return 0 if everything is OK, -1 cant stop tasks for some reason
-	* */
+	 */
 	int stop_all();
 
 	/* @brief printing info about  all tasks / вывод информации обо всех задача
@@ -59,7 +60,7 @@ protected:
 	 * @return 0 if OK, -1 if something bad happen
 	 *         0 если все ок, -1 если что-то плохое произошло
 	 * */
-	int get_all_task_info();
+	int get_all_task_info() const;
 
 	/* @brief  command manager / обработчик консольных сообщений
 	 * @param task_id task id / id задачи
@@ -77,7 +78,7 @@ protected:
 	 * 		  OperationCode::CONTINUE - continue task / продолжить задачу
 	 * @return 0 if all is OK, -1 f there is no task with this tasks ID, -2 if something bad happened
 	 *         0 если все ок, -1 нет задачи с таким task id, -2 если все плохо
-	 * */
+	 */
 	int operation_manager(uint task_id, OperationCode op);
 
 	/* @brief remove tasks rom task list if there are end there work
@@ -88,8 +89,8 @@ protected:
 private:
 
 	/* @brief checking if word is a number / проверка являеться ли число строкой
- 	* @return boolean true/false / булево значение
- 	*/
+ 	 * @return boolean true/false / булево значение
+ 	 */
 	inline bool is_number(const std::string& s) const
 	{
 		std::string::const_iterator it = s.begin();

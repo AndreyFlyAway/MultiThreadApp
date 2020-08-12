@@ -107,7 +107,7 @@ int TaskPool::stop_all()
 	return 0;
 }
 
-int TaskPool::get_all_task_info()
+int TaskPool::get_all_task_info() const
 {
 	int res = 0;
 	std::shared_lock lock(g_task_list_mutex);

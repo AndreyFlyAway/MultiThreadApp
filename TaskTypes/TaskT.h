@@ -12,7 +12,6 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
-#include <time.h>
 #include <shared_mutex>
 #include <atomic>
 
@@ -85,7 +84,7 @@ public:
 	/* @brief task status /  статус задачи
 	 * @return 0 if OK, -1 if something bad happened
 	 */
-	State get_status();
+	State get_status() const;
 
 	/* @brief pause_flag task / поставить на паузу
 	 * @return 0 if OK, 1 if paused already, -1 if something bad happened
@@ -112,7 +111,7 @@ class TaskAsyncProgress : public TaskT{
 public:
 	TaskAsyncProgress(uint id, int delay);
 protected:
-	void thread_operations();
+	void thread_operations() override;
 
 	/* @brief Method that increase progress value from 0 to 100 during sec_to_work seconds. It is assumed
 	 *        that method works async in thread_operations method
