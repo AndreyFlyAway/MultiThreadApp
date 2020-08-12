@@ -135,7 +135,6 @@ int TaskPool::get_all_task_info()
 int TaskPool::task_manager(const std::string& cmd)
 {
 	clean_tasks_pool();
-	/* разделяю строку по словам */
 	std::stringstream ss(cmd);
 	std::istream_iterator<std::string> begin_s(ss);
 	std::istream_iterator<std::string> end_s;
