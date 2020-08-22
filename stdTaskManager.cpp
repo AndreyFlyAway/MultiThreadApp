@@ -1,7 +1,3 @@
-//
-// Created by user on 22.04.20.
-//
-
 #include <cstdarg>
 #include "stdTaskManager.h"
 
@@ -23,6 +19,16 @@ static const std::string INF_T_CMD = "inf";
 /* look function print_help */
 static const int WRONG_FMT = 1;
 static const int UNREC_CMD = 2;
+
+
+TaskTypes str_to_task(std::string s)
+{
+	static const std::map<std::string , TaskTypes> mapping = {
+			{ASYN_PORGRESS_T_CMD, TaskTypes::ASYNC_PROGRS},
+			{INF_T_CMD, TaskTypes::INFINITY}
+	};
+	return mapping.at(s);
+}
 
 void TaskPool::print_help(int wrong_fmt) const
 {
@@ -131,27 +137,63 @@ int TaskPool::get_all_task_info() const
 	return res;
 }
 
-
 int TaskPool::task_manager(const std::string& cmd)
 {
+	int ret = 0;
 	clean_tasks_pool();
 	std::stringstream ss(cmd);
 	std::istream_iterator<std::string> begin_s(ss);
 	std::istream_iterator<std::string> end_s;
 	std::vector<std::string> commands(begin_s, end_s);
-	std::string cmd_type = commands[0];
-	if (commands.size() == 0)
-	{
+	size_t cmdl_len = commands.size();
+	if (cmdl_len == 0) {
 		print_help(WRONG_FMT);
 		return -1;
 	}
+	std::string cmd_type = commands[0];
 
-	if (commands.size() == 1)
-	{
-		if (cmd_type == START_TASK_CMD)
-			start_task(0);
+	try {
+		if (cmd_type == START_TASK_CMD) {
+			int delay = 0;
+			TaskTypes type_of_task = TaskTypes::SIMPLE;
+			if (cmdl_len == 2)
+			{
+				if (is_number(commands[1]))
+					delay = std::stoi(commands[1]);
+				else
+					type_of_task = str_to_task(commands[1]);
+			}
+			if (cmdl_len >= 3)
+			{
+				type_of_task = str_to_task(commands[1]);
+				delay = std::stoi(commands[2]);
+			}
+			start_task(delay, type_of_task);
+		}
 		else if (cmd_type == INFO_CMD)
-			get_all_task_info();
+		{
+			if (cmdl_len == 1)
+				get_all_task_info();
+			else
+				operation_manager(std::stoi(commands[1]), OperationCode::INFO);
+		}
+		else if (cmd_type == PAUSE_TASK_CMD)
+		{
+			operation_manager(std::stoi(commands[1]), OperationCode::PAUSE);
+		}
+		else if (cmd_type == CONTINUE_TASK_CMD)
+		{
+			operation_manager(std::stoi(commands[1]), OperationCode::CONTINUE);
+		}
+		else if (cmd_type == STOP_TASK_CMD)
+		{
+			operation_manager(std::stoi(commands[1]), OperationCode::STOP);
+		}
+		else if (cmd_type == EXIT_CMD)
+		{
+			stop_all();
+			return 1;
+		}
 #ifdef TEST_MODE
 		else if (cmd_type == TEST_THREADS_CMD)
 		{
@@ -159,68 +201,18 @@ int TaskPool::task_manager(const std::string& cmd)
 				start_task(0);
 		}
 #endif
-		else if (cmd_type == EXIT_CMD)
-		{
-			stop_all();
-			return 1;
-		}
-		else
-			// TODO: make it due process exception
-			print_help(UNREC_CMD);
-	}
-	else if (commands.size() == 2)
-	{
-		uint num_val = 0;
-		if (is_number(commands[1]))
-		{
-			num_val = uint(std::stoi(commands[1]));
-			if (cmd_type == START_TASK_CMD)
-				start_task(num_val);
-			else if (cmd_type == INFO_CMD)
-				operation_manager(num_val, OperationCode::INFO);
-			else if (cmd_type == PAUSE_TASK_CMD)
-				operation_manager(num_val, OperationCode::PAUSE);
-			else if (cmd_type == CONTINUE_TASK_CMD)
-				operation_manager(num_val, OperationCode::CONTINUE);
-			else if (cmd_type == STOP_TASK_CMD)
-				operation_manager(stoi(commands[1]), OperationCode::STOP);
-			else
-				print_help(UNREC_CMD);
-		}
 		else
 		{
-			if (cmd_type == START_TASK_CMD)
-			{
-				if (commands[1] == ASYN_PORGRESS_T_CMD)
-					start_task(num_val, TaskTypes::ASYNC_PROGRS);
-				else if (commands[1] == INF_T_CMD)
-					start_task(num_val, TaskTypes::INFINITY);
-				else
-					print_help(UNREC_CMD);
-			}
-			else
-				print_help(UNREC_CMD);
-			return 0;
+			print_help(1);
+			ret = 0;
 		}
 	}
-	else if (commands.size() == 3)
-	{
-		if (commands[0] == START_TASK_CMD)
-		{
-			if (commands[1] == ASYN_PORGRESS_T_CMD)
-			{
-				uint num_val = 0;
-				if (is_number(commands[2]))
-					num_val = uint(std::stoi(commands[2]));
-				start_task(num_val, TaskTypes::ASYNC_PROGRS);
-			}
-		}
+	catch (const std::exception & e) {
+		print_help(1);
+		ret = -1;
 	}
-	else
-	{
-		print_help(UNREC_CMD);
-	}
-	return 0;
+
+	return ret;
 }
 
 int TaskPool::operation_manager(uint task_id, OperationCode op)
