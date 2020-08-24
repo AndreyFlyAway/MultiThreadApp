@@ -14,6 +14,7 @@
 #include <memory>
 #include <shared_mutex>
 #include <atomic>
+#include <future>
 
 enum class State {
 	TASK_WORKS,

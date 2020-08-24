@@ -1,6 +1,6 @@
 #include "PyramidSort.h"
 
-static const int RESIZE_VAL = 100;
+using namespace std::chrono_literals;
 
 Pyramid::Pyramid():
 	n(0)
@@ -20,10 +20,6 @@ Pyramid::Pyramid(std::vector<std::string> d)
 
 int Pyramid::insert(const std::string s)
 {
-	if (n == data_v.size())
-	{
-		data_v.resize(data_v.size() + RESIZE_VAL, "");
-	}
 	n += 1;
 	// TODO: should I?
 	data_v.push_back(std::move(s));
@@ -61,4 +57,37 @@ void Pyramid::bubble_down(uint64_t p)
 		else
 			break;
 	}
+}
+
+PyramidSortTask::PyramidSortTask(uint id, int delay,
+		const std::string& f_read, const std::string& f_write):
+		TaskAsyncProgress(id, delay),
+		file_to_read(f_read),
+		file_to_write(f_write)
+{
+	str_type = "Pyramid sort task";
+	pyramid = std::make_shared<Pyramid>();
+}
+
+
+void PyramidSortTask::thread_operations()
+{
+	std::future<int> progress_val = std::async(&PyramidSortTask::progress_value_async, this, 10);
+	for (int i = 0; i < 20 ; i++)
+	{
+		if (pause_flag)
+		{
+			set_status(State::TASK_PAUSE);
+			std::unique_lock<std::mutex> lk(pause_mutex);
+			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
+			set_status(State::TASK_WORKS);
+		}
+		if (stop_flag)
+		{
+			break;
+		}
+		// TODO: do sorting things
+	}
+	progress_val.wait();
+	set_results("");
 }

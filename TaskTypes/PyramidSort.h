@@ -2,10 +2,11 @@
  *  Here is no any new realization of pyramid sort algorithm, created just for practice
  */
 
+#pragma once
+
 #include <iostream>
 #include <vector>
-
-#pragma once
+#include "TaskT.h"
 
 // TODO: make template
 class Pyramid{
@@ -53,3 +54,18 @@ private:
 	}
 
 };
+
+/* @brief Task that sort string from one file and write result in other file. Each string must be
+ * placed at new line
+ */
+class PyramidSortTask: public TaskAsyncProgress {
+protected:
+	std::string file_to_read;  // path where data for sorting placed
+	std::string file_to_write; // path where result data will be placed
+	std::shared_ptr<Pyramid> pyramid;
+public:
+	PyramidSortTask(uint id, int delay, const std::string& f_read, const std::string& f_write);
+protected:
+	void thread_operations() override;
+};
+
