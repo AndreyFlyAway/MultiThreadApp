@@ -5,6 +5,7 @@
 
 using namespace std::chrono_literals;
 
+static const std::string RES_NOT_READY= "not ready";
 
 TaskT::TaskT(uint id, int delay):
 		pause_flag(false),
@@ -14,7 +15,8 @@ TaskT::TaskT(uint id, int delay):
 		status(State::TASK_WAITING),
 		time_started(0),
 		stop_flag(false),
-		str_type("simple task")
+		str_type("simple task"),
+		result_info("no result")
 {
 }
 
@@ -160,6 +162,14 @@ int TaskT::stop()
 	if (pause_flag == true)
 		resume();
 	return 0;
+}
+
+std::string TaskT::get_results()
+{
+	if (get_status() == State::TASK_END)
+		return result_info;
+	else
+		return RES_NOT_READY;
 }
 
 void TaskT::run()

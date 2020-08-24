@@ -3,6 +3,13 @@ project(MultiThreadApp)
 
 set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(tests)
-# add_definitions(-DTEST_MODE)
-add_executable(MultiThreadApp main.cpp stdTaskManager.cpp TaskTypes/TaskT.cpp TaskTypes/InfinityTask.cpp TaskTypes/InfinityTask.h)
+add_definitions(-DTEST_MODE)
+add_executable(MultiThreadApp
+        main.cpp
+        stdTaskManager.cpp
+        TaskTypes/TaskT.cpp
+        TaskTypes/InfinityTask.cpp
+        TaskTypes/InfinityTask.h
+        TaskTypes/PyramidSort.h
+        TaskTypes/PyramidSort.cpp)
 target_link_libraries(MultiThreadApp pthread)

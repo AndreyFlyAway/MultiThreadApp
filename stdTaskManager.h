@@ -27,6 +27,7 @@ protected:
 	// global list with tasks
 	mutable std::shared_mutex g_task_list_mutex;
 	std::map<uint, std::shared_ptr<TaskT>> g_task_list;
+	std::map<uint, std::string> results; // result of tasks
 	bool exit_flag;
 
 	/* @brief printing help /вывод справки об использовании
@@ -76,6 +77,13 @@ protected:
 	 *         0 если все ок, -1 нет задачи с таким task id, -2 если все плохо
 	 */
 	int operation_manager(uint task_id, OperationCode op);
+
+	/* @brief  print results of task placed in result buffer if it's exist
+	 *         вывести результаты задачи, если они есть в буфере результатов
+	 * @param task_id task id / id задачи
+	 * @return 0 if all is OK
+	 */
+	int get_result(uint task_id);
 
 	/* @brief remove tasks rom task list if there are end there work
 	 * @return

@@ -11,7 +11,7 @@ Pyramid::Pyramid(std::vector<std::string> d)
 {
 	data_v.push_back("null");
 	data_v.insert(data_v.end(), d.begin(), d.end());
-	n = data_v.size() - 1;-
+	n = data_v.size() - 1;
 	for(uint64_t i = n; i>= 1; i--)
 	{
 		bubble_down(i);

@@ -10,6 +10,7 @@ static const std::string INFO_CMD = "info";
 static const std::string PAUSE_TASK_CMD = "pause";
 static const std::string CONTINUE_TASK_CMD = "resume";
 static const std::string STOP_TASK_CMD = "stop";
+static const std::string GET_RESULTS = "results";
 static const std::string TEST_THREADS_CMD = "start_1000";
 /* names of task types */
 static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
@@ -282,6 +283,14 @@ void TaskPool::clean_tasks_pool()
 		{
 			id_to_delete.push_back(it.first);
 			t->cur_thread.join();
+			results[it.first] = t->get_results();
+			// TODO: think about it, make size of this buffer customizable
+			if (results.size() >= 30)
+			{
+				auto eraseIter = results.begin();
+				std::advance(eraseIter, 10);
+				results.erase(results.begin(),eraseIter);
+			}
 		}
 	}
 	for(int i: id_to_delete)

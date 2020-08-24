@@ -44,6 +44,7 @@ protected:
 	std::mutex pause_mutex;                   // mutex that used in condition_variable
 	std::atomic<bool>  stop_flag;             // stop flag
 	std::string str_type;                     // string representation of type, some kind of small description
+	std::string result_info;                  // here can be placed string representation of result
 
 protected:
 	/* @brief thread function / поточная функция
@@ -100,6 +101,11 @@ public:
 	 * @return 0 if OK, -1 if something bad happened
 	 */
 	int stop();
+
+	/* @brief return results of task / результат выполнения задачи
+	 * @return string result
+	 */
+	std::string get_results();
 
 	friend class TaskPool;
 };
