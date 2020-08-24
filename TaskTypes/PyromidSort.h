@@ -18,6 +18,12 @@ public:
 	Pyramid(std::vector<std::string> d);
 	~Pyramid() {};
 	int insert(const std::string s);
+	void print()
+	{
+		for(int i = 1; i <= n; i++)
+			std::cout << data_v[i] << " ";
+		std::cout << std::endl;
+	}
 
 private:
 	void bubble_up();
@@ -41,7 +47,7 @@ private:
 		return (n * 2);
 	}
 
-	int compare_str(uint64_t i, uint64_t j)
+	inline int compare_str(uint64_t i, uint64_t j)
 	{
 		return data_v[i].compare(data_v[j]);
 	}

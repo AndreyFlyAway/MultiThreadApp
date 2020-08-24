@@ -14,7 +14,6 @@ Pyramid::Pyramid(std::vector<std::string> d)
 	n = data_v.size() - 1;
 	for(uint64_t i = n; i>= 1; i--)
 	{
-		std::cout << "bubble_down for index " << i << std::endl;
 		bubble_down(i);
 	}
 }
@@ -39,8 +38,7 @@ void Pyramid::bubble_up()
 	uint64_t c = n;
 	if (p == 0)
 		return;
-	auto compare_val = [&]{return data_v[p].compare(data_v[c]);};
-	while ((p != 0) && (compare_val() > 0))
+	while ((p != 0) && (compare_str(p, c) > 0))
 	{
 		swap(p, c);
 		c = p;
@@ -51,12 +49,16 @@ void Pyramid::bubble_up()
 void Pyramid::bubble_down(uint64_t p)
 {
 	uint64_t min_index = p;
-	uint64_t c = young_ch(p);
-	for (int i = 0; (i <= 1)  && ((c+i) <= n); i++)
-		if (compare_str(min_index, c+i) > 0)
-			min_index = c + i;
-	if (min_index != p) {
-		swap(p, min_index);
-		bubble_down(min_index);
+	while (true) {
+		uint64_t c = young_ch(p);
+		for (int i = 0; (i <= 1) && ((c + i) <= n); i++)
+			if (compare_str(min_index, c + i) > 0)
+				min_index = c + i;
+		if (min_index != p) {
+			swap(p, min_index);
+			p = min_index;
+		}
+		else
+			break;
 	}
 }
