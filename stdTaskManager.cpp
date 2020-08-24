@@ -190,6 +190,13 @@ int TaskPool::task_manager(const std::string& cmd)
 		{
 			operation_manager(std::stoi(commands[1]), OperationCode::STOP);
 		}
+		else if (cmd_type == GET_RESULTS)
+		{
+			if (cmdl_len = 1)
+				get_result(0);
+			else
+				get_result(std::stoi(commands[1]));
+		}
 		else if (cmd_type == EXIT_CMD)
 		{
 			stop_all();
@@ -269,6 +276,28 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		std::cout << debug_info << std::endl;
 
 	return ret;
+}
+
+int TaskPool::get_result(uint task_id)
+{
+	if (results.empty())
+		std::cout << "No results yet" << std::endl;
+	if (task_id == 0)
+	{
+		for (const auto &it: results)
+		{
+			std::cout << "Task #" << it.first << ": " << it.second << std::endl;
+		}
+	}
+	else
+	{
+		auto it = results.find(task_id);
+		if (it != results.end())
+			std::cout << "Task #" << it->first << ": " << it->second << std::endl;
+		else
+			std::cout << "No results for task # " << task_id << std::endl;
+	}
+	return 0;
 }
 
 void TaskPool::clean_tasks_pool()

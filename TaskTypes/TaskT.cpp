@@ -105,7 +105,13 @@ void TaskT::thread_function(std::chrono::seconds time_tleep)
 		if (time_tleep != std::chrono::seconds::zero())
 		{
 			// no need to use status(State::TASK_WAITING), 'cause it's init value
-			std::this_thread::sleep_for(time_tleep);
+			std::chrono::seconds s(delay_sec);
+			for(int i = 1; i <= delay_sec ; i++)
+			{
+				if (get_status() == State::TASK_END)
+					return;
+				std::this_thread::sleep_for(1s);
+			}
 		}
 		set_status(State::TASK_WORKS);
 		thread_operations();
@@ -166,6 +172,7 @@ int TaskT::stop()
 
 std::string TaskT::get_results()
 {
+	// TODO: probably should use mutex...
 	if (get_status() == State::TASK_END)
 		return result_info;
 	else
@@ -201,6 +208,9 @@ void TaskAsyncProgress::thread_operations()
 		std::this_thread::sleep_for(500ms);
 	}
 	progress_val.wait();
+	// TODO: probably should use mutex...
+	if (!stop_flag)
+		result_info = "AsyncProgress type of task doesnt have results";
 }
 
 int TaskAsyncProgress::progress_value_async(int sec_to_work)
