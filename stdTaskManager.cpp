@@ -192,7 +192,7 @@ int TaskPool::task_manager(const std::string& cmd)
 		}
 		else if (cmd_type == GET_RESULTS)
 		{
-			if (cmdl_len = 1)
+			if (cmdl_len == 1)
 				get_result(0);
 			else
 				get_result(std::stoi(commands[1]));
