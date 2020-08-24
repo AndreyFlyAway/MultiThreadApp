@@ -15,11 +15,13 @@ public:
 
 public:
 	Pyramid();
+	Pyramid(std::vector<std::string> d);
 	~Pyramid() {};
 	int insert(const std::string s);
 
 private:
 	void bubble_up();
+	void bubble_down(uint64_t i=1);
 
 	inline void swap(uint64_t i, uint64_t j) noexcept
 	{
@@ -37,6 +39,11 @@ private:
 	inline uint64_t young_ch(uint64_t n)
 	{
 		return (n * 2);
+	}
+
+	int compare_str(uint64_t i, uint64_t j)
+	{
+		return data_v[i].compare(data_v[j]);
 	}
 
 };

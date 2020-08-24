@@ -5,7 +5,18 @@ static const int RESIZE_VAL = 100;
 Pyramid::Pyramid():
 	n(0)
 {
-	data_v.resize(RESIZE_VAL, "");
+	data_v.push_back("null");
+}
+Pyramid::Pyramid(std::vector<std::string> d)
+{
+	data_v.push_back("null");
+	data_v.insert(data_v.end(), d.begin(), d.end());
+	n = data_v.size() - 1;
+	for(uint64_t i = n; i>= 1; i--)
+	{
+		std::cout << "bubble_down for index " << i << std::endl;
+		bubble_down(i);
+	}
 }
 
 int Pyramid::insert(const std::string s)
@@ -16,7 +27,7 @@ int Pyramid::insert(const std::string s)
 	}
 	n += 1;
 	// TODO: should I?
-	data_v[n] = std::move(s);
+	data_v.push_back(std::move(s));
 	bubble_up();
 
 	return 0;
@@ -34,5 +45,18 @@ void Pyramid::bubble_up()
 		swap(p, c);
 		c = p;
 		p = parent(c);
+	}
+}
+
+void Pyramid::bubble_down(uint64_t p)
+{
+	uint64_t min_index = p;
+	uint64_t c = young_ch(p);
+	for (int i = 0; (i <= 1)  && ((c+i) <= n); i++)
+		if (compare_str(min_index, c+i) > 0)
+			min_index = c + i;
+	if (min_index != p) {
+		swap(p, min_index);
+		bubble_down(min_index);
 	}
 }
