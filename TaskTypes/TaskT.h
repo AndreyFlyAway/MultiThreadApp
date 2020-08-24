@@ -39,7 +39,7 @@ protected:
     std::atomic<int> progress;                // progress of task / прогресс задачи
     State status;                             // code status: 0 - task is ending, 1 - in waiting, 2 - started, 3 - task in pause_flag / код статуса: 0 - в процессе завершения, 1 - в ожидании, 2 - запущена, 3 - задача приостановлена
     std::atomic<bool> pause_flag;             // that status od task shows that one ot the tread is working with object / статус задачи, который говорит о том, что сейчас идет работа с текущем экзмемпляро задачи
-	mutable std::shared_mutex obj_mutex;      // mutex for protecting data / мьютек для защиты данных
+	mutable std::shared_mutex obj_mutex;      // mutex for protecting operations on data / мьютек для защиты операций над данными
 	std::condition_variable_any resume_cond;  // used to resume task if it was set in pause_flag / используеться для снятия с паузы
 	std::mutex pause_mutex;                   // mutex that used in condition_variable
 	std::atomic<bool>  stop_flag;             // stop flag
@@ -63,6 +63,18 @@ protected:
 	 * @return
 	 */
 	void thread_function(std::chrono::seconds time_tleep);
+
+	/* @brief set results of task, should be called before task gets status TASK_END in other case
+	 * 		  results will not be wrote, it's supposed that calling this function make before stopping
+	 * 		  task, since task can be completed by calling stop method
+	 * 		  установить результат, эта функци должна быть вызвана до того, как задача будет иметь статус
+	 * 		  TASK_END, иначе результат записан не будет, подразумевается, что запись результат осуществляеться
+	 * 		  до остановки задача, т.к. задача может быть завершена вызовом метода stop
+	 * @param s string with result information / строка с результатом
+	 * @return 0 if OK, -1 if task in end process and results cant be set
+	 *         0 если ве ОК, -1 если задача в статусе зваершения и результат не может быть записан
+	 */
+	int set_results(const std::string& s);
 
 public:
     // TODO: necessarily make destructor 'cause I use smart pointer and thread is has to stopped correctly

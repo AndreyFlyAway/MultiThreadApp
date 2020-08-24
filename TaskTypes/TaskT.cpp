@@ -123,6 +123,20 @@ void TaskT::thread_function(std::chrono::seconds time_tleep)
 	}
 }
 
+int TaskT::set_results(const std::string& s)
+{
+	if (get_status() != State::TASK_END)
+	{
+		std::unique_lock lk(obj_mutex);
+		result_info = s;
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 State TaskT::get_status() const
 {
 	std::shared_lock lock(obj_mutex);
@@ -146,7 +160,6 @@ int TaskT::pause()
 
 int TaskT::resume()
 {
-
 	int ret = 0;
 	if (pause_flag == true)
 	{
@@ -172,9 +185,12 @@ int TaskT::stop()
 
 std::string TaskT::get_results()
 {
-	// TODO: probably should use mutex...
 	if (get_status() == State::TASK_END)
+	{
+		// TODO: probably no benefit to use mutex
+		std::unique_lock lk(obj_mutex);
 		return result_info;
+	}
 	else
 		return RES_NOT_READY;
 }
@@ -208,9 +224,7 @@ void TaskAsyncProgress::thread_operations()
 		std::this_thread::sleep_for(500ms);
 	}
 	progress_val.wait();
-	// TODO: probably should use mutex...
-	if (!stop_flag)
-		result_info = "AsyncProgress type of task doesnt have results";
+	set_results("AsyncProgress type of task doesnt have results");
 }
 
 int TaskAsyncProgress::progress_value_async(int sec_to_work)
