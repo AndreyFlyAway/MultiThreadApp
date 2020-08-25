@@ -1,6 +1,9 @@
+#include <filesystem>
+#include <fstream>
 #include "PyramidSort.h"
 
 using namespace std::chrono_literals;
+namespace fs = std::filesystem;
 
 Pyramid::Pyramid():
 	n(0)
@@ -71,9 +74,17 @@ PyramidSortTask::PyramidSortTask(uint id, int delay,
 
 void PyramidSortTask::thread_operations()
 {
+	fs::path p(file_to_read);
+	if(!fs::exists(p))
+		set_results("File " + file_to_read + " doesnt exists.");
+
 	std::future<int> progress_val = std::async(&PyramidSortTask::progress_value_async, this, 5);
-	for (int i = 0; i < 20 ; i++)
+
+	std::string line;
+	std::ifstream infile(file_to_read);
+	while (std::getline(infile, line))
 	{
+		pyramid.insert(line);
 		if (pause_flag)
 		{
 			set_status(State::TASK_PAUSE);
@@ -85,8 +96,8 @@ void PyramidSortTask::thread_operations()
 		{
 			break;
 		}
-		// TODO: do sorting things
 	}
 	progress_val.wait();
 	set_results("Pyramid sort total time:");
+	infile.close();
 }

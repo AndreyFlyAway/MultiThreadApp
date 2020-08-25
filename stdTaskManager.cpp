@@ -90,7 +90,7 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 	else
 		throw WrongTaskArgsException();
 
-	// TODO: make preventing starting tasks if there more than some value
+	// TODO: make preventing starting tasks if them exist more than some value
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
