@@ -19,10 +19,8 @@ void InfinityTask::thread_operations()
 	{
 		if (pause_flag)
 		{
-			set_status(State::TASK_PAUSE);
 			std::unique_lock<std::mutex> lk(pause_mutex);
 			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
-			set_status(State::TASK_WORKS);
 		}
 		f();
 		progress += 1;

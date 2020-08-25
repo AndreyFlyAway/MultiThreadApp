@@ -35,10 +35,8 @@ void TaskT::thread_operations()
 			return;
 		if (pause_flag)
 		{
-			set_status(State::TASK_PAUSE);
 			std::unique_lock<std::mutex> lk(pause_mutex);
 			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
-			set_status(State::TASK_WORKS);
 		}
 
 		progress += 3;
@@ -148,6 +146,7 @@ int TaskT::pause()
 	int ret = 0;
 	if (pause_flag == false)
 	{
+		set_status(State::TASK_PAUSE);
 		pause_flag = true;
 		ret = 0;
 	}
@@ -163,6 +162,7 @@ int TaskT::resume()
 	int ret = 0;
 	if (pause_flag == true)
 	{
+		set_status(State::TASK_WORKS);
 		pause_flag = false;
 		resume_cond.notify_one();
 		ret = 0;
@@ -215,10 +215,8 @@ void TaskAsyncProgress::thread_operations()
 	{
 		if (pause_flag)
 		{
-			set_status(State::TASK_PAUSE);
 			std::unique_lock<std::mutex> lk(pause_mutex);
 			resume_cond.wait(lk, [&]{return !(pause_flag.load());});
-			set_status(State::TASK_WORKS);
 		}
 		if (stop_flag)
 		{

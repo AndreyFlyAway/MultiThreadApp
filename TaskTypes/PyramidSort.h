@@ -19,16 +19,11 @@ public:
 	Pyramid(std::vector<std::string> d);
 	~Pyramid() {};
 	int insert(const std::string s);
-	void print()
-	{
-		for(int i = 1; i <= n; i++)
-			std::cout << data_v[i] << " ";
-		std::cout << std::endl;
-	}
-
-private:
+	std::vector<std::string> get_results();
+protected:
 	void bubble_up();
 	void bubble_down(uint64_t i=1);
+	std::string extract_min();
 
 	inline void swap(uint64_t i, uint64_t j) noexcept
 	{
