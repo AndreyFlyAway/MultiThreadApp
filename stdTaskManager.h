@@ -17,6 +17,14 @@ enum class TaskTypes {
 	INFINITY
 };
 
+struct WrongTaskArgsException : public std::exception
+{
+	const char * what () const throw ()
+	{
+		return "Wrong arguments for starting task";
+	}
+};
+
 class TaskPool
 {
 public:
@@ -44,7 +52,7 @@ protected:
 	 * @return 0 if everything is OK, -1 cant start task
 	 *        0 если все ок, -1 если не удалось запустить задачу
 	 */
-	int start_task(int delay, TaskTypes type_of_prog=TaskTypes::SIMPLE);
+	int start_task(const std::vector<std::string>& args);
 
 	/* @brief stop all tasks / остановить все задачи
 	 * @param task_id task id / id задачи

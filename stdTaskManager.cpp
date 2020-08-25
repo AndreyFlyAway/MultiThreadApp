@@ -1,5 +1,6 @@
 #include <cstdarg>
 #include "stdTaskManager.h"
+#include "TaskTypes/PyramidSort.h"
 
 using Task_shr_p = std::shared_ptr<TaskT>;
 
@@ -13,8 +14,10 @@ static const std::string STOP_TASK_CMD = "stop";
 static const std::string GET_RESULTS = "results";
 static const std::string TEST_THREADS_CMD = "start_1000";
 /* names of task types */
+static const std::string SIMPLE_T_CMD = "simple";
 static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
 static const std::string INF_T_CMD = "inf";
+static const std::string PYRAMID_SORT_T_CMD = "pyramid";
 
 
 /* look function print_help */
@@ -61,39 +64,41 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf("\n" );
 }
 
-int TaskPool::start_task(int delay, TaskTypes type_of_prog)
+int TaskPool::start_task(const std::vector<std::string>& args)
 {
 	// TODO: make warning if amount of tasks is over hardware_concurrency - 1
+	int ret = 0;
 	static uint g_task_count = 1;
-	int _delay = delay;
+	int arg_len = args.size();
+	std::string task_type = args[1];
+	int _delay = std::stoi(args[2]);
 	if (_delay < 0)
 	{
 		std::cout << "ERROR: delay cant be negative! Started without delay. " << std::endl;
 		_delay = 0;
 	}
-	int ret = 0;
 
 	Task_shr_p task;
-	switch (type_of_prog) {
-		case TaskTypes::SIMPLE:
-			task = std::make_shared<TaskT>(g_task_count, _delay);
-			break;
-		case TaskTypes::ASYNC_PROGRS:
-			task = std::make_shared<TaskAsyncProgress>(g_task_count, _delay);
-			break;
-		case TaskTypes::INFINITY:
-			task = std::make_shared<InfinityTask>(g_task_count, _delay);
-			break;
-		default:
-			task = std::make_shared<TaskT>(g_task_count, _delay);
-			break;
-	}
+	if (task_type == SIMPLE_T_CMD)
+		task = std::make_shared<TaskT>(g_task_count, _delay);
+	else if (task_type == ASYN_PORGRESS_T_CMD)
+		task = std::make_shared<TaskAsyncProgress>(g_task_count, _delay);
+	else if (task_type == INF_T_CMD)
+		task = std::make_shared<InfinityTask>(g_task_count, _delay);
+	else if (task_type == PYRAMID_SORT_T_CMD)
+		task = std::make_shared<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
+	else
+		throw WrongTaskArgsException();
 
+	// TODO: make preventing starting tasks if there more than some value
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
 	g_task_list[g_task_count] = task;
 	std::cout << "Task #" << g_task_count << " started." << std::endl;
 	g_task_count++;
+	// if once amount of task will be more than uint max
+	if (g_task_count == 0)
+		g_task_count = 1;
 	return ret;
 }
 
@@ -155,21 +160,7 @@ int TaskPool::task_manager(const std::string& cmd)
 
 	try {
 		if (cmd_type == START_TASK_CMD) {
-			int delay = 0;
-			TaskTypes type_of_task = TaskTypes::SIMPLE;
-			if (cmdl_len == 2)
-			{
-				if (is_number(commands[1]))
-					delay = std::stoi(commands[1]);
-				else
-					type_of_task = str_to_task(commands[1]);
-			}
-			if (cmdl_len >= 3)
-			{
-				type_of_task = str_to_task(commands[1]);
-				delay = std::stoi(commands[2]);
-			}
-			start_task(delay, type_of_task);
+			start_task(commands);
 		}
 		else if (cmd_type == INFO_CMD)
 		{
@@ -205,8 +196,9 @@ int TaskPool::task_manager(const std::string& cmd)
 #ifdef TEST_MODE
 		else if (cmd_type == TEST_THREADS_CMD)
 		{
+			std::vector<std::string> v{"start"};
 			for(int i = 0 ; i < 1000 ; i++)
-				start_task(0);
+				start_task(v);
 		}
 #endif
 		else
@@ -317,8 +309,8 @@ void TaskPool::clean_tasks_pool()
 			if (results.size() >= 30)
 			{
 				auto eraseIter = results.begin();
-				std::advance(eraseIter, 10);
-				results.erase(results.begin(),eraseIter);
+//				std::advance(eraseIter, 10)
+				results.erase(results.begin());
 			}
 		}
 	}

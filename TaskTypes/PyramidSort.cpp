@@ -66,13 +66,12 @@ PyramidSortTask::PyramidSortTask(uint id, int delay,
 		file_to_write(f_write)
 {
 	str_type = "Pyramid sort task";
-	pyramid = std::make_shared<Pyramid>();
 }
 
 
 void PyramidSortTask::thread_operations()
 {
-	std::future<int> progress_val = std::async(&PyramidSortTask::progress_value_async, this, 10);
+	std::future<int> progress_val = std::async(&PyramidSortTask::progress_value_async, this, 5);
 	for (int i = 0; i < 20 ; i++)
 	{
 		if (pause_flag)
@@ -89,5 +88,5 @@ void PyramidSortTask::thread_operations()
 		// TODO: do sorting things
 	}
 	progress_val.wait();
-	set_results("");
+	set_results("Pyramid sort total time:");
 }

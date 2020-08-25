@@ -114,12 +114,13 @@ void TaskT::thread_function(std::chrono::seconds time_tleep)
 		}
 		set_status(State::TASK_WORKS);
 		thread_operations();
-		set_status(State::TASK_END);
 	}
 	catch (const std::exception & e)
 	{
+		set_results("error in process caused");
 		std::cout << "In task #" << task_id << " cause some exception: " + std::string(e.what()) << std::endl;
 	}
+	set_status(State::TASK_END);
 }
 
 int TaskT::set_results(const std::string& s)

@@ -62,7 +62,7 @@ class PyramidSortTask: public TaskAsyncProgress {
 protected:
 	std::string file_to_read;  // path where data for sorting placed
 	std::string file_to_write; // path where result data will be placed
-	std::shared_ptr<Pyramid> pyramid;
+	Pyramid pyramid;
 public:
 	PyramidSortTask(uint id, int delay, const std::string& f_read, const std::string& f_write);
 protected:
