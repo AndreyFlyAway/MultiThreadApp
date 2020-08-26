@@ -16,7 +16,7 @@ public:
 
 public:
 	Pyramid();
-	Pyramid(std::vector<std::string> d);
+	Pyramid(const std::vector<std::string>& d);
 	~Pyramid() {};
 	int insert(const std::string s);
 	std::vector<std::string> get_results();
@@ -57,7 +57,6 @@ class PyramidSortTask: public TaskAsyncProgress {
 protected:
 	std::string file_to_read;  // path where data for sorting placed
 	std::string file_to_write; // path where result data will be placed
-	Pyramid pyramid;
 public:
 	PyramidSortTask(uint id, int delay, const std::string& f_read, const std::string& f_write);
 protected:
