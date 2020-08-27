@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include "PyramidSort.h"
 
 using namespace std::chrono_literals;
@@ -10,7 +11,7 @@ Pyramid::Pyramid():
 {
 	data_v.push_back("null");
 }
-Pyramid::Pyramid(std::vector<std::string> d)
+Pyramid::Pyramid(const std::vector<std::string>& d)
 {
 	data_v.push_back("null");
 	data_v.insert(data_v.end(), d.begin(), d.end());
@@ -107,11 +108,12 @@ void PyramidSortTask::thread_operations()
 	std::future<int> progress_val = std::async(&PyramidSortTask::progress_value_async, this, 5);
 
 	// reading and sorting
+	std::vector<std::string> data_from_file;
 	std::string line;
 	std::ifstream infile(file_to_read);
 	while (std::getline(infile, line))
 	{
-		pyramid.insert(line);
+		data_from_file.push_back(line);
 		if (pause_flag)
 		{
 			std::unique_lock<std::mutex> lk(pause_mutex);
@@ -120,12 +122,23 @@ void PyramidSortTask::thread_operations()
 		if (stop_flag)
 			break;
 	}
-	std::vector<std::string> sorted_data = pyramid.get_results();
+	// sorting
+	auto start_t = std::chrono::system_clock::now();
+	Pyramid pyramid_data(data_from_file);
+	std::vector<std::string> sorted_data = pyramid_data.get_results();
+	auto sorting_pyromid_t = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start_t);
+
+	// sorting with std::sort
+	start_t = std::chrono::system_clock::now();
+	std::sort(data_from_file.begin(), data_from_file.end());
+	auto sorting_t_std = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start_t);
+
+	// writing results
 	std::ofstream output_file(file_to_write);
 	std::ostream_iterator<std::string> output_iterator(output_file, "\n");
 	std::copy(sorted_data.begin(), sorted_data.end(), output_iterator);
 
 	progress_val.wait();
-	set_results("Pyramid sort total time:");
+	set_results("Pyramid sort total time: " + std::to_string(sorting_pyromid_t.count()) + " ms vs std::sort" + std::to_string(sorting_t_std.count()));
 	infile.close();
 }
