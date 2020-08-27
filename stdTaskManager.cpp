@@ -11,7 +11,7 @@ static const std::string INFO_CMD = "info";
 static const std::string PAUSE_TASK_CMD = "pause";
 static const std::string CONTINUE_TASK_CMD = "resume";
 static const std::string STOP_TASK_CMD = "stop";
-static const std::string GET_RESULTS = "results";
+static const std::string GET_RESULTS_CMD = "results";
 static const std::string TEST_THREADS_CMD = "start_1000";
 /* names of task types */
 static const std::string SIMPLE_T_CMD = "simple";
@@ -46,21 +46,32 @@ void TaskPool::print_help(int wrong_fmt) const
 			break;
 	}
 
-	const char common_format[] = "\t%-25s\t%s\n";
+	const char common_format[] = "\t%-50s\t%s\n";
 	printf( "Commands:\n");
 	printf(common_format, START_TASK_CMD.c_str(),  "Start without delay. By default simple task will be created." );
-	printf(common_format, (START_TASK_CMD + " [time]").c_str(),  "Start task with delay in seconds." );
-	printf(common_format, (START_TASK_CMD + " " + ASYN_PORGRESS_T_CMD + " [time]").c_str(),  "Start task with asynchronous increasing of progress. Can be started with delay or not" );
-	printf(common_format, (START_TASK_CMD + " " + INF_T_CMD + " [time]").c_str(),  "Start infinity task." );
+	printf(common_format, (START_TASK_CMD + " [task type] [delay] [args] ").c_str(),  "Start task with specified type and delay. Some of tasks requires arguments. Types of tasks and below." );
 	printf(common_format, (STOP_TASK_CMD + " [task ID]" ).c_str(),  "Stop task by ID." );
 	printf(common_format, (PAUSE_TASK_CMD + " [task ID]" ).c_str(),  "Set task on pause." );
 	printf(common_format, (CONTINUE_TASK_CMD + " [task ID]" ).c_str(),  "Resume task." );
 	printf(common_format, (INFO_CMD + " [task ID]" ).c_str(),  "Information about one task by ID" );
-#ifdef TEST_MODE
-	printf(common_format, TEST_THREADS_CMD.c_str(),  "Start 1000 threads." );
-#endif
 	printf(common_format, INFO_CMD.c_str(),  "Information about all tasks." );
 	printf(common_format, EXIT_CMD.c_str(),  "Stop all tasks and exit" );
+	printf(common_format, (GET_RESULTS_CMD + " [task ID]" ).c_str(), "Get results for task. If [task ID] is not set then all results will be printed.");
+#ifdef TEST_MODE
+	printf(common_format, TEST_THREADS_CMD.c_str(),  "Start 1000 task of type simple." );
+#endif
+	printf("\n" );
+	printf( "Types of tasks:\n");
+	printf(common_format, SIMPLE_T_CMD.c_str(),  "Simple task that increase progress during 10 seconds." );
+	printf(common_format, ASYN_PORGRESS_T_CMD.c_str(),  "Task that increase progress during 10 seconds asynchronously. Work two threads");
+	printf(common_format, INF_T_CMD.c_str(),  "Tasks that works infinitely.");
+	printf(common_format, PYRAMID_SORT_T_CMD.c_str(),  "Task that sort strings from file using pyramid sort. Results are saved in file.");
+	printf(common_format, "",  "This task requires two arguments - path to file with data and path to file where results will be saved");
+	printf("\n" );
+	printf("Examples of starting commands:\n");
+	printf(common_format, "start simple 0",  "Start simple task with no delay");
+	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress with no delay equals 12 seconds.");
+	printf(common_format, "start pyramid 0 ./test_data.txt ./results.txt",  "Start task pyramid sorting task. Files are placed in current folder.");
 	printf("\n" );
 }
 
@@ -181,7 +192,7 @@ int TaskPool::task_manager(const std::string& cmd)
 		{
 			operation_manager(std::stoi(commands[1]), OperationCode::STOP);
 		}
-		else if (cmd_type == GET_RESULTS)
+		else if (cmd_type == GET_RESULTS_CMD)
 		{
 			if (cmdl_len == 1)
 				get_result(0);
