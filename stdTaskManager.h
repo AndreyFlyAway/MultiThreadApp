@@ -34,7 +34,7 @@ public:
 protected:
 	// global list with tasks
 	mutable std::shared_mutex g_task_list_mutex;
-	std::map<uint, std::shared_ptr<TaskT>> g_task_list;
+	std::map<uint, std::unique_ptr<TaskT>> g_task_list;
 	std::map<uint, std::string> results; // result of tasks
 	bool exit_flag;
 

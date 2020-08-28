@@ -2,7 +2,7 @@
 #include "stdTaskManager.h"
 #include "TaskTypes/PyramidSort.h"
 
-using Task_shr_p = std::shared_ptr<TaskT>;
+using Task_shr_up = std::unique_ptr<TaskT>;
 
 /* command constants*/
 static const std::string EXIT_CMD = "quit";
@@ -70,7 +70,7 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf("\n" );
 	printf("Examples of starting commands:\n");
 	printf(common_format, "start simple 0",  "Start simple task with no delay");
-	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress with no delay equals 12 seconds.");
+	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress with delay equals 12 seconds.");
 	printf(common_format, "start pyramid 0 ./test_data.txt ./results.txt",  "Start task pyramid sorting task. Files are placed in current folder.");
 	printf("\n" );
 }
@@ -89,22 +89,22 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 		_delay = 0;
 	}
 
-	Task_shr_p task;
+	Task_shr_up task;
 	if (task_type == SIMPLE_T_CMD)
-		task = std::make_shared<TaskT>(g_task_count, _delay);
+		task = std::make_unique<TaskT>(g_task_count, _delay);
 	else if (task_type == ASYN_PORGRESS_T_CMD)
-		task = std::make_shared<TaskAsyncProgress>(g_task_count, _delay);
+		task = std::make_unique<TaskAsyncProgress>(g_task_count, _delay);
 	else if (task_type == INF_T_CMD)
-		task = std::make_shared<InfinityTask>(g_task_count, _delay);
+		task = std::make_unique<InfinityTask>(g_task_count, _delay);
 	else if (task_type == PYRAMID_SORT_T_CMD)
-		task = std::make_shared<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
+		task = std::make_unique<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
 	else
 		throw WrongTaskArgsException();
 
 	// TODO: make preventing starting tasks if them exist more than some value
 	task->run();
 	std::unique_lock lock(g_task_list_mutex);
-	g_task_list[g_task_count] = task;
+	g_task_list[g_task_count] = std::move(task);
 	std::cout << "Task #" << g_task_count << " started." << std::endl;
 	g_task_count++;
 	// if once amount of task will be more than uint max
@@ -119,13 +119,11 @@ int TaskPool::stop_all()
 	// not in one cycle 'cause stopping task some time
 	for(const auto& it: g_task_list)
 	{
-		Task_shr_p t = it.second;
-		t->stop();
+		it.second->stop();
 	}
 	for(const auto& it: g_task_list)
 	{
-		Task_shr_p t = it.second;
-		t->cur_thread.join();
+		it.second->cur_thread.join();
 	}
 	return 0;
 }
@@ -139,8 +137,7 @@ int TaskPool::get_all_task_info() const
 	{
 		for( auto const& [key, val] : g_task_list)
 		{
-			Task_shr_p task = val;
-			asnwer += task->task_info();
+			asnwer += val->task_info();
 		}
 	}
 	else
@@ -207,7 +204,7 @@ int TaskPool::task_manager(const std::string& cmd)
 #ifdef TEST_MODE
 		else if (cmd_type == TEST_THREADS_CMD)
 		{
-			std::vector<std::string> v{"start"};
+			std::vector<std::string> v{"start", "simple", "0"};
 			for(int i = 0 ; i < 1000 ; i++)
 				start_task(v);
 		}
@@ -218,7 +215,7 @@ int TaskPool::task_manager(const std::string& cmd)
 			ret = 0;
 		}
 	}
-	catch (const std::exception & e) {
+	catch (const std::exception& ex)  {
 		print_help(1);
 		ret = -1;
 	}
@@ -237,25 +234,24 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		return -1;
 	}
 
-	Task_shr_p task = it->second;
 	std::string debug_info;
 
 	switch (op) {
 		case OperationCode::STOP:
 		{
-			ret = task->stop();
+			ret = it->second->stop();
 			if (ret == 0)
 				debug_info = "Task " + std::to_string(task_id) + " stopped ";
 			break;
 		}
 		case OperationCode::INFO:
 		{
-			debug_info = task->task_info();
+			debug_info = it->second->task_info();
 			break;
 		}
 		case OperationCode::PAUSE:
 		{
-			ret = task->pause();
+			ret = it->second->pause();
 			if (ret == 0)
 				debug_info = "Task " + std::to_string(task_id) + " paused ";
 			else
@@ -264,7 +260,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		}
 		case OperationCode::CONTINUE:
 		{
-			ret = task->resume();
+			ret = it->second->resume();
 			if (ret == 0)
 				debug_info = "Task " + std::to_string(task_id) + " resumed ";
 			else
@@ -273,7 +269,6 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		}
 	}
 	// To free mutex as fast as it possible
-	task.reset();
 	lock.unlock();
 	if (debug_info.length())
 		std::cout << debug_info << std::endl;
@@ -310,12 +305,11 @@ void TaskPool::clean_tasks_pool()
 	std::vector<int> id_to_delete;
 	for(const auto& it : g_task_list)
 	{
-		Task_shr_p t = it.second;
-		if (t->get_status() == State::TASK_END)
+		if (it.second->get_status() == State::TASK_END)
 		{
 			id_to_delete.push_back(it.first);
-			t->cur_thread.join();
-			results[it.first] = t->get_results();
+			it.second->cur_thread.join();
+			results[it.first] = it.second->get_results();
 			// TODO: think about it, make size of this buffer customizable
 			if (results.size() >= 30)
 			{

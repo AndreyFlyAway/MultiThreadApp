@@ -22,15 +22,6 @@ Pyramid::Pyramid(const std::vector<std::string>& d)
 	}
 }
 
-int Pyramid::insert(const std::string s)
-{
-	n += 1;
-	// TODO: should I?
-	data_v.push_back(std::move(s));
-	bubble_up();
-
-	return 0;
-}
 std::vector<std::string> Pyramid::get_results()
 {
 	std::vector<std::string> results;
