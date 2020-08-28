@@ -20,6 +20,7 @@ public:
 	~Pyramid() {};
 	int insert(const std::string s);
 	std::vector<std::string> get_results();
+
 protected:
 	void bubble_up();
 	void bubble_down(uint64_t i=1);

@@ -11,12 +11,6 @@ enum class OperationCode {
 	CONTINUE
 };
 
-enum class TaskTypes {
-	SIMPLE,
-	ASYNC_PROGRS,
-	INFINITY
-};
-
 struct WrongTaskArgsException : public std::exception
 {
 	const char * what () const throw ()
@@ -97,16 +91,4 @@ protected:
 	 * @return
 	 */
 	void clean_tasks_pool();
-
-private:
-
-	/* @brief checking if word is a number / проверка являеться ли число строкой
- 	 * @return boolean true/false / булево значение
- 	 */
-	inline bool is_number(const std::string& s) const
-	{
-		std::string::const_iterator it = s.begin();
-		while (it != s.end() && isdigit(*it)) ++it;
-		return !s.empty() && it == s.end();
-	}
 };

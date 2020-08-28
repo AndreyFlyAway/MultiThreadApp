@@ -2,8 +2,6 @@
 #include "stdTaskManager.h"
 #include "TaskTypes/PyramidSort.h"
 
-using Task_shr_up = std::unique_ptr<TaskT>;
-
 /* command constants*/
 static const std::string EXIT_CMD = "quit";
 static const std::string START_TASK_CMD = "start";
@@ -24,16 +22,6 @@ static const std::string PYRAMID_SORT_T_CMD = "pyramid";
 static const int WRONG_FMT = 1;
 static const int UNREC_CMD = 2;
 
-
-TaskTypes str_to_task(std::string s)
-{
-	static const std::map<std::string , TaskTypes> mapping = {
-			{ASYN_PORGRESS_T_CMD, TaskTypes::ASYNC_PROGRS},
-			{INF_T_CMD, TaskTypes::INFINITY}
-	};
-	return mapping.at(s);
-}
-
 void TaskPool::print_help(int wrong_fmt) const
 {
 	switch (wrong_fmt)
@@ -48,7 +36,6 @@ void TaskPool::print_help(int wrong_fmt) const
 
 	const char common_format[] = "\t%-50s\t%s\n";
 	printf( "Commands:\n");
-	printf(common_format, START_TASK_CMD.c_str(),  "Start without delay. By default simple task will be created." );
 	printf(common_format, (START_TASK_CMD + " [task type] [delay] [args] ").c_str(),  "Start task with specified type and delay. Some of tasks requires arguments. Types of tasks and below." );
 	printf(common_format, (STOP_TASK_CMD + " [task ID]" ).c_str(),  "Stop task by ID." );
 	printf(common_format, (PAUSE_TASK_CMD + " [task ID]" ).c_str(),  "Set task on pause." );
@@ -70,8 +57,8 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf("\n" );
 	printf("Examples of starting commands:\n");
 	printf(common_format, "start simple 0",  "Start simple task with no delay");
-	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress with delay equals 12 seconds.");
-	printf(common_format, "start pyramid 0 ./test_data.txt ./results.txt",  "Start task pyramid sorting task. Files are placed in current folder.");
+	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress, delay equals 12 seconds.");
+	printf(common_format, "start pyramid 0 ./test_data.txt ./results.txt",  "Start pyramid sorting task. Files are placed in current folder.");
 	printf("\n" );
 }
 
@@ -89,7 +76,7 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 		_delay = 0;
 	}
 
-	Task_shr_up task;
+	std::unique_ptr<TaskT> task;
 	if (task_type == SIMPLE_T_CMD)
 		task = std::make_unique<TaskT>(g_task_count, _delay);
 	else if (task_type == ASYN_PORGRESS_T_CMD)
@@ -241,7 +228,7 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		{
 			ret = it->second->stop();
 			if (ret == 0)
-				debug_info = "Task " + std::to_string(task_id) + " stopped ";
+				debug_info = "Task #" + std::to_string(task_id) + " stopped";
 			break;
 		}
 		case OperationCode::INFO:
@@ -253,18 +240,18 @@ int TaskPool::operation_manager(uint task_id, OperationCode op)
 		{
 			ret = it->second->pause();
 			if (ret == 0)
-				debug_info = "Task " + std::to_string(task_id) + " paused ";
+				debug_info = "Task #" + std::to_string(task_id) + " paused";
 			else
-				debug_info = "Task " + std::to_string(task_id) + " on pause already";
+				debug_info = "Task #" + std::to_string(task_id) + " on pause already";
 			break;
 		}
 		case OperationCode::CONTINUE:
 		{
 			ret = it->second->resume();
 			if (ret == 0)
-				debug_info = "Task " + std::to_string(task_id) + " resumed ";
+				debug_info = "Task #" + std::to_string(task_id) + " resumed";
 			else
-				debug_info = "Task " + std::to_string(task_id) + " is not on pause ";
+				debug_info = "Task #" + std::to_string(task_id) + " is not on pause";
 			break;
 		}
 	}
@@ -314,7 +301,6 @@ void TaskPool::clean_tasks_pool()
 			if (results.size() >= 30)
 			{
 				auto eraseIter = results.begin();
-//				std::advance(eraseIter, 10)
 				results.erase(results.begin());
 			}
 		}
