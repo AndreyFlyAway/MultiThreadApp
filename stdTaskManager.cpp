@@ -1,6 +1,7 @@
 #include <cstdarg>
 #include "stdTaskManager.h"
 #include "TaskTypes/PyramidSort.h"
+#include "TaskTypes/MergeSortTask.h"
 
 /* command constants*/
 static const std::string EXIT_CMD = "quit";
@@ -16,6 +17,7 @@ static const std::string SIMPLE_T_CMD = "simple";
 static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
 static const std::string INF_T_CMD = "inf";
 static const std::string PYRAMID_SORT_T_CMD = "pyramid";
+static const std::string MERGE_SORT_T_CMD = "mergesort";
 
 
 /* look function print_help */
@@ -48,13 +50,16 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf(common_format, TEST_THREADS_CMD.c_str(),  "Start 1000 task of type simple." );
 #endif
 	printf("\n" );
+
 	printf( "Types of tasks:\n");
 	printf(common_format, SIMPLE_T_CMD.c_str(),  "Simple task that increase progress during 10 seconds." );
 	printf(common_format, ASYN_PORGRESS_T_CMD.c_str(),  "Task that increase progress during 10 seconds asynchronously. Work two threads");
 	printf(common_format, INF_T_CMD.c_str(),  "Tasks that works infinitely.");
 	printf(common_format, PYRAMID_SORT_T_CMD.c_str(),  "Task that sort strings from file using pyramid sort. Results are saved in file.");
 	printf(common_format, "",  "This task requires two arguments - path to file with data and path to file where results will be saved");
+	printf(common_format, MERGE_SORT_T_CMD.c_str(),  "Sort letters in a word using merge sort algorithm. Requires argument word to sort.");
 	printf("\n" );
+
 	printf("Examples of starting commands:\n");
 	printf(common_format, "start simple 0",  "Start simple task with no delay");
 	printf(common_format, "start asyn_prog 12",  "Start task with asynchronous increase progress, delay equals 12 seconds.");
@@ -85,6 +90,8 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 		task = std::make_unique<InfinityTask>(g_task_count, _delay);
 	else if (task_type == PYRAMID_SORT_T_CMD)
 		task = std::make_unique<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
+	else if (task_type == MERGE_SORT_T_CMD)
+		task = std::make_unique<MergeSortTask>(g_task_count, _delay, args[3]);
 	else
 		throw WrongTaskArgsException();
 
