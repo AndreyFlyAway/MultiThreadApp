@@ -7,7 +7,7 @@
 #include <iostream>
 #include "TaskT.h"
 
-/* @brief recursive merge sort alogrithm
+/* @brief recursive merge sort algorithm
  * @param _str string to sort
  * @param low low limit of string
  * @param low high limit of string

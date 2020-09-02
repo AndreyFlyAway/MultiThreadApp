@@ -10,6 +10,9 @@ add_executable(MultiThreadApp
         TaskTypes/TaskT.cpp
         TaskTypes/InfinityTask.cpp
         TaskTypes/PyramidSort.cpp
-        TaskTypes/MergeSortTask.cpp)
+        TaskTypes/MergeSortTask.cpp
+        TaskTypes/QuickSortTask.cpp
+        )
 
 target_link_libraries(MultiThreadApp pthread)
+

@@ -2,6 +2,7 @@
 #include "stdTaskManager.h"
 #include "TaskTypes/PyramidSort.h"
 #include "TaskTypes/MergeSortTask.h"
+#include "TaskTypes/QuickSortTask.h"
 
 /* command constants*/
 static const std::string EXIT_CMD = "quit";
@@ -18,6 +19,7 @@ static const std::string ASYN_PORGRESS_T_CMD = "asyn_prog";
 static const std::string INF_T_CMD = "inf";
 static const std::string PYRAMID_SORT_T_CMD = "pyramid";
 static const std::string MERGE_SORT_T_CMD = "mergesort";
+static const std::string QUICK_SORT_T_CMD = "quicksort";
 
 
 /* look function print_help */
@@ -58,6 +60,7 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf(common_format, PYRAMID_SORT_T_CMD.c_str(),  "Task that sort strings from file using pyramid sort. Results are saved in file.");
 	printf(common_format, "",  "This task requires two arguments - path to file with data and path to file where results will be saved");
 	printf(common_format, MERGE_SORT_T_CMD.c_str(),  "Sort letters in a word using merge sort algorithm. Requires argument word to sort.");
+	printf(common_format, QUICK_SORT_T_CMD.c_str(),  "Sort letters in a word using quick sort algorithm. Requires argument word to sort.");
 	printf("\n" );
 
 	printf("Examples of starting commands:\n");
@@ -92,6 +95,8 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 		task = std::make_unique<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
 	else if (task_type == MERGE_SORT_T_CMD)
 		task = std::make_unique<MergeSortTask>(g_task_count, _delay, args[3]);
+	else if (task_type == QUICK_SORT_T_CMD)
+		task = std::make_unique<QuickSortTask>(g_task_count, _delay, args[3]);
 	else
 		throw WrongTaskArgsException();
 
@@ -334,3 +339,4 @@ int TaskPool::main_loop()
 	}
 	return 0;
 }
+
