@@ -82,8 +82,8 @@ std::string TaskT::task_info() const
 			str_status = "ending";
 			break;
 	}
-	std::string res = "Task #" + std::to_string(_task_id) + " of type " + str_type +
-			"; staus: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
+	std::string res = "Task #" + std::to_string(_task_id) + " ; type: " + str_type +
+			"; status: " + str_status + " ; progress " + std::to_string(_progress) + "\n";
 	return res;
 }
 

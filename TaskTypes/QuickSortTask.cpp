@@ -54,6 +54,6 @@ void QuickSortTask::thread_operations()
 		return;
 	quick_sort(str_to_sort, 0, str_to_sort.size()-1);
 	progress_val.wait();
-	set_results("merge sort results " + str_to_sort);
+	set_results("Quick sort results " + str_to_sort);
 	return;
 }

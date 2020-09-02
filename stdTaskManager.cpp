@@ -12,6 +12,7 @@ static const std::string PAUSE_TASK_CMD = "pause";
 static const std::string CONTINUE_TASK_CMD = "resume";
 static const std::string STOP_TASK_CMD = "stop";
 static const std::string GET_RESULTS_CMD = "results";
+static const std::string CLEAN_RESULTS_CMD = "clean_res";
 static const std::string TEST_THREADS_CMD = "start_1000";
 /* names of task types */
 static const std::string SIMPLE_T_CMD = "simple";
@@ -48,6 +49,7 @@ void TaskPool::print_help(int wrong_fmt) const
 	printf(common_format, INFO_CMD.c_str(),  "Information about all tasks." );
 	printf(common_format, EXIT_CMD.c_str(),  "Stop all tasks and exit" );
 	printf(common_format, (GET_RESULTS_CMD + " [task ID]" ).c_str(), "Get results for task. If [task ID] is not set then all results will be printed.");
+	printf(common_format, CLEAN_RESULTS_CMD.c_str(), "Clean results.");
 #ifdef TEST_MODE
 	printf(common_format, TEST_THREADS_CMD.c_str(),  "Start 1000 task of type simple." );
 #endif
@@ -195,6 +197,10 @@ int TaskPool::task_manager(const std::string& cmd)
 			else
 				get_result(std::stoi(commands[1]));
 		}
+		else if (cmd_type == CLEAN_RESULTS_CMD)
+		{
+			clean_result();
+		}
 		else if (cmd_type == EXIT_CMD)
 		{
 			stop_all();
@@ -294,6 +300,13 @@ int TaskPool::get_result(uint task_id)
 		else
 			std::cout << "No results for task # " << task_id << std::endl;
 	}
+	return 0;
+}
+
+int TaskPool::clean_result()
+{
+	results.clear();
+	std::cout << "Results cleaned." << std::endl;
 	return 0;
 }
 

@@ -71,6 +71,6 @@ void MergeSortTask::thread_operations()
 		return;
 	mergesort(str_to_sort, 0, str_to_sort.size());
 	progress_val.wait();
-	set_results("merge sort results " + str_to_sort);
+	set_results("Merge sort results " + str_to_sort);
 	return;
 }

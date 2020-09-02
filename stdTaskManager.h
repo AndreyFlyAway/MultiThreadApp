@@ -87,6 +87,11 @@ protected:
 	 */
 	int get_result(uint task_id);
 
+	/* @brief  clean results / очищает результаты
+	 * @return 0 if all is OK
+	 */
+	int clean_result();
+
 	/* @brief remove tasks rom task list if there are end there work
 	 * @return
 	 */
