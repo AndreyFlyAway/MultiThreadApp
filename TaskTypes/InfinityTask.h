@@ -9,6 +9,7 @@
 class InfinityTask : public TaskT {
 public:
 	InfinityTask(uint id, int delay);
+	virtual ~InfinityTask() override {};
 private:
 	void thread_operations() override;
 };

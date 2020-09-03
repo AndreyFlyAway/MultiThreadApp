@@ -207,6 +207,7 @@ TaskAsyncProgress::TaskAsyncProgress(uint id, int delay):
 	str_type = "with async progress";
 }
 
+
 void TaskAsyncProgress::thread_operations()
 {
 	std::future<int> progress_val = std::async(&TaskAsyncProgress::progress_value_async, this, 10);

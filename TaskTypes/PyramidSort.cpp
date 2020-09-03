@@ -11,6 +11,8 @@ Pyramid::Pyramid():
 {
 	data_v.push_back("null");
 }
+
+
 Pyramid::Pyramid(const std::vector<std::string>& d)
 {
 	data_v.push_back("null");
@@ -85,7 +87,6 @@ PyramidSortTask::PyramidSortTask(uint id, int delay,
 {
 	str_type = "Pyramid sort task";
 }
-
 
 void PyramidSortTask::thread_operations()
 {

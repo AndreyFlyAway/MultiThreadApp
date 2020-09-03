@@ -83,7 +83,7 @@ public:
 	TaskT(const TaskT &t) = delete;
 	TaskT & operator=(const TaskT&) = delete;
 	// TODO: make move constructors
-	~TaskT();
+	virtual ~TaskT();
 	/* @brief running thread / запуск задачи
 	 * @return string info
 	 */
@@ -129,6 +129,7 @@ public:
 class TaskAsyncProgress : public TaskT{
 public:
 	TaskAsyncProgress(uint id, int delay);
+	virtual ~TaskAsyncProgress() override {};
 protected:
 	void thread_operations() override;
 

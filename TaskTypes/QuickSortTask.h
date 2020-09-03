@@ -15,7 +15,7 @@ class QuickSortTask: public TaskAsyncProgress
 {
 public:
 	QuickSortTask(uint id, int delay, const std::string to_sort);
-	~QuickSortTask() {};
+	virtual ~QuickSortTask() override {};
 protected:
 	std::string str_to_sort; // word to sort / слово для сортироваки
 	void thread_operations() override;

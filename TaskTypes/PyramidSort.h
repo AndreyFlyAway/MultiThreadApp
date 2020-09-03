@@ -60,6 +60,7 @@ protected:
 	std::string file_to_write; // path where result data will be placed
 public:
 	PyramidSortTask(uint id, int delay, const std::string& f_read, const std::string& f_write);
+	virtual ~PyramidSortTask() override {};
 protected:
 	void thread_operations() override;
 };

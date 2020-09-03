@@ -78,8 +78,8 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 	int ret = 0;
 	static uint g_task_count = 1;
 	int arg_len = args.size();
-	std::string task_type = args[1];
-	int _delay = std::stoi(args[2]);
+	std::string task_type = args.at(1);
+	int _delay = std::stoi(args.at(2));
 	if (_delay < 0)
 	{
 		std::cout << "ERROR: delay cant be negative! Started without delay. " << std::endl;
@@ -94,11 +94,11 @@ int TaskPool::start_task(const std::vector<std::string>& args)
 	else if (task_type == INF_T_CMD)
 		task = std::make_unique<InfinityTask>(g_task_count, _delay);
 	else if (task_type == PYRAMID_SORT_T_CMD)
-		task = std::make_unique<PyramidSortTask>(g_task_count, _delay, args[3], args[4]);
+		task = std::make_unique<PyramidSortTask>(g_task_count, _delay, args.at(3), args.at(4));
 	else if (task_type == MERGE_SORT_T_CMD)
-		task = std::make_unique<MergeSortTask>(g_task_count, _delay, args[3]);
+		task = std::make_unique<MergeSortTask>(g_task_count, _delay, args.at(3));
 	else if (task_type == QUICK_SORT_T_CMD)
-		task = std::make_unique<QuickSortTask>(g_task_count, _delay, args[3]);
+		task = std::make_unique<QuickSortTask>(g_task_count, _delay, args.at(3));
 	else
 		throw WrongTaskArgsException();
 
@@ -176,19 +176,19 @@ int TaskPool::task_manager(const std::string& cmd)
 			if (cmdl_len == 1)
 				get_all_task_info();
 			else
-				operation_manager(std::stoi(commands[1]), OperationCode::INFO);
+				operation_manager(std::stoi(commands.at(1)), OperationCode::INFO);
 		}
 		else if (cmd_type == PAUSE_TASK_CMD)
 		{
-			operation_manager(std::stoi(commands[1]), OperationCode::PAUSE);
+			operation_manager(std::stoi(commands.at(1)), OperationCode::PAUSE);
 		}
 		else if (cmd_type == CONTINUE_TASK_CMD)
 		{
-			operation_manager(std::stoi(commands[1]), OperationCode::CONTINUE);
+			operation_manager(std::stoi(commands.at(1)), OperationCode::CONTINUE);
 		}
 		else if (cmd_type == STOP_TASK_CMD)
 		{
-			operation_manager(std::stoi(commands[1]), OperationCode::STOP);
+			operation_manager(std::stoi(commands.at(1)), OperationCode::STOP);
 		}
 		else if (cmd_type == GET_RESULTS_CMD)
 		{

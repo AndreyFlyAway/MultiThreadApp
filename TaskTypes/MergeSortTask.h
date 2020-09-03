@@ -21,7 +21,7 @@ class MergeSortTask: public TaskAsyncProgress
 {
 public:
 	MergeSortTask(uint id, int delay, const std::string to_sort);
-	~MergeSortTask() {};
+	virtual ~MergeSortTask() override {};
 protected:
 	std::string str_to_sort; // word to sort / слово для сортироваки
 	void thread_operations() override;
